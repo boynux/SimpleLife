@@ -35,7 +35,7 @@
                 });
 
                 FB.Event.subscribe('{% if current_user %}auth.logout{% else %}auth.login{% endif %}', function(response) {
-                    {% if current_user %} window.location = "/logout" {% else %} window.location.reload(); {% endif %}
+                    {% if current_user %} window.location = "/signin" {% else %} window.location.reload(); {% endif %}
                 });
 
                 FB.api ('/{{ current_user }}', function (response) {

@@ -15,3 +15,15 @@ class User (ndb.Model):
     updated_time = ndb.DateTimeProperty ()
     create_time = ndb.DateTimeProperty (auto_now_add = True)
     last_seen = ndb.DateTimeProperty (auto_now = True)
+    access_token = ndb.StringProperty ()
+
+    @classmethod
+    def get_user_by_id (cls, id):
+        parent = ndb.Key ('Users', 'Facebook')
+        user = cls.query (cls.id == int(id), ancestor = parent).fetch ()
+
+        if len(user):
+            return user[0]
+        else:
+            return None
+
