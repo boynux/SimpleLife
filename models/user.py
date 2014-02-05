@@ -19,7 +19,7 @@ class User (ndb.Model):
 
     @classmethod
     def get_user_by_id (cls, id):
-        parent = ndb.Key ('Users', 'Facebook')
+        parent = ndb.Key ('Account', 'Facebook')
         user = cls.query (cls.id == int(id), ancestor = parent).fetch ()
 
         if len(user):

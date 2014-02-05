@@ -14,5 +14,8 @@ handlers:
 - url: /static
   static_dir: static
 
+- url: /partials
+  static_dir: static/partials/
+
 - url: /.*
   script: main.application

@@ -1,0 +1,20 @@
+<div ng-if="user">
+    <p>
+        <a href="http://graph.facebook.com/{{ user.id }}">
+            <img src="http://graph.facebook.com/{{ user.id }}/picture?type=square"/>
+        </a> <span id='name'></span>
+    </p>
+    <p>Hello, {{ user.name}}</p>
+</div>
+
+<div id="fb-root"></div>
+
+<div ng-if="user">
+    <div>
+        Upload photo test: 
+        <form method="post">
+            Enter URL to URLFetch from:<input type="text" name="url"/>
+            <input type="submit"/>
+        </form>
+    </div>
+</div>

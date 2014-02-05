@@ -5,6 +5,7 @@ import datetime
 from google.appengine.ext import ndb
 from webapp2_extras import sessions
 
+import json
 import os
 
 from config import *
@@ -16,15 +17,12 @@ class FacebookHandler (webapp2.RequestHandler):
         current_user = None
         cookie = None
 
-        if not self.session.get ("user") or 'expired' in self.request.query:
-            try:
-                cookie = facebook.get_user_from_cookie (
-                    self.request.cookies, 
-                    FACEBOOK_APP_ID,
-                    FACEBOOK_APP_SECRET
-                )
-            except:
-                pass
+        if not self.session.get ("user"):
+            cookie = facebook.get_user_from_cookie (
+                self.request.cookies, 
+                FACEBOOK_APP_ID,
+                FACEBOOK_APP_SECRET
+            )
 
             if cookie:
                 user = User.get_user_by_id (cookie['uid'])
@@ -40,7 +38,7 @@ class FacebookHandler (webapp2.RequestHandler):
                         )
                     user_info["id"] = int(user_info["id"])
 
-                    user = User (**user_info)
+                    user = User (parent = ndb.Key ("Account", "Facebook"), **user_info)
                     user.access_token = cookie["access_token"]
 
                 elif user.access_token != cookie["access_token"]:
@@ -60,15 +58,36 @@ class FacebookHandler (webapp2.RequestHandler):
         return self.session.get ("user")
 
     def graph (self, api, **args):
+        if "code" in self.request.query:
+            print (
+                self.session.get ("redirect_url"), 
+            )
+            access_token = facebook.get_access_token_from_code (
+                self.request.GET["code"], 
+                self.session.get ("redirect_url"), 
+                FACEBOOK_APP_ID, 
+                FACEBOOK_APP_SECRET
+            )
+
+            user = User.get_user_by_id (self.current_user['id'])
+            user.access_token = access_token
+            user.put ()
+
+            self.current_user["access_token"] = access_token
+
         graph = facebook.GraphAPI (self.current_user["access_token"])
 
         try:
             return graph.get_object (api)
         except facebook.GraphAPIError as error:
-            print "ERROR!", error
-            self.redirect ('/signin', abort = True)
-            self.response.clear ()
+            # redirect to facebook OAuth page to 
+            # renew secret_token
+            self.session["redirect_url"] = self.request.url
+            self.response.out.write ("<script language='javascript'> top.location = \
+                'https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s'</script>" % (FACEBOOK_APP_ID, self.request.url)
+            )
 
+        return None
     def dispatch (self):
         self.session_store = sessions.get_store (request = self.request)
 
@@ -83,8 +102,8 @@ class FacebookHandler (webapp2.RequestHandler):
  
     def display (self, template = 'index.html', **args):
         template_values = {
-            'facebook_app_id': FACEBOOK_APP_ID,
-            'current_user':  self.current_user["id"] if self.current_user else None
+            'facebook_app_id': FACEBOOK_APP_ID
+            # 'current_user':  self.current_user["id"] if self.current_user else None
         }
 
         args.update (template_values)
@@ -92,60 +111,62 @@ class FacebookHandler (webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template(template)
         self.response.write(template.render(args))
 
+class CurrentUserHandler (FacebookHandler):
+    def get (self):
+        if self.current_user:
+            self.response.out.write (json.dumps ({'uid': self.current_user['id']}))
+        else:
+            self.abort (401)
+
 class MainPage (FacebookHandler):
     def get (self):
-        if not self.current_user:
-            self.redirect ("/signin")
+        # if not self.current_user:
+        #    self.redirect ("/signin")
 
         self.display ()
 
-class SignInPage (webapp2.RequestHandler):
+class SignInPage (FacebookHandler):
     def get (self):
-        template_values = {
-            'facebook_app_id': FACEBOOK_APP_ID,
-            'current_user': None,
-            'albums': None
-        }
+        response = {'success': False}
 
-        try:
-            current_user = facebook.get_user_from_cookie (
-                self.request.cookies,
-                FACEBOOK_APP_ID,
-                FACEBOOK_APP_SECRET
-            )
-        except:
-            current_user = None
-
-        if current_user:
-            self.redirect ('/')
-               
-        template = JINJA_ENVIRONMENT.get_template('signin.html')
-        self.response.write(template.render(template_values))
+        if self.current_user:
+            response["success"] = True
+            response["id"] = self.current_user["id"]
  
+        self.response.out.write (json.dumps (response));
+
 class AlbumsHandler (FacebookHandler):
     def get (self):
         albums = []
 
         if self.current_user:
-            albums = self.graph ('me/albums')
-
-            print albums
-            albums = [
-                dict (
-                    name = album["name"],
-                    icon = self.graph (album["cover_photo"]),
-                    dikt = album
-                ) for album in albums["data"]
-            ]
+            all_albums = self.graph ('me/albums')
+            
+            if all_albums:
+                print albums
+                albums = [
+                    dict (
+                        name = album["name"],
+                        icon = self.graph (album["cover_photo"]),
+                        dikt = album
+                    ) for album in all_albums["data"]
+                ]
         else:
-            self.redirect ("/signin")
+            pass
 
         self.display ('albums.html', albums = albums)
+
+class LogoutHandler(FacebookHandler):
+    def get(self):
+        if self.current_user is not None:
+            self.session['user'] = None
 
 application = webapp2.WSGIApplication ([
     ('/', MainPage),
     ('/signin', SignInPage),
     ('/albums', AlbumsHandler),
+    ('/signout', LogoutHandler),
+    ('/current_user', CurrentUserHandler),
     # ('/([^/]+)/list', AlbumHandler),
     # ('/([^/]+)/upload', AddPhoto)
 ], config = CONFIG, debug = True)
