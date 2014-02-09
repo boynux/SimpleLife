@@ -154,7 +154,8 @@ class AlbumsHandler (FacebookHandler):
         else:
             pass
 
-        self.display ('albums.html', albums = albums)
+        self.response.out.write (json.dumps (albums))
+        # self.display ('albums.html', albums = albums)
 
 class LogoutHandler(FacebookHandler):
     def get(self):

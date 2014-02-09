@@ -5,13 +5,45 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
     }
 ]);
 
-simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http',
-    function ($scope, $http) {
+simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'fbAuthService', 
+    function ($scope, $http, $facebook) {
+        console.log ($facebook.connected);
+        if ($facebook.connected) {
+            $facebook.getAlbumsList (function (result) {
+                console.log (result);
+                $scope.$apply (function () {
+                    $scope.albums = result.data;
+                });
+            });
+        } else {
+            $scope.$on ('fb.auth.authResponseChange', function (event, response) {
+                if (response.status === 'connected') {
+                    $facebook.getAlbumsList (function (result) {
+                        $scope.albums = result.data;
+                    });
+                }
+            });
+        }
+            /*
+        if (typeof FB !== 'undefined') {
+            FB.api ('me/albums', function (response) {
+                $scope.$apply (function () {
+                    $scope.albums = response
+                });
+            })
+        } else {
+            $facebook.addToQ (function ($scope) {
+                this.getAlbumsList ($scope);
+            }, $facebook, [$scope]);
+        }
+            */
+        /*
         $http.get ('albums').success (function (data) {
             $scope.albums = data;
         });
 
         $scope.orderPrope = 'data';
+        */
     }
 ]);
 

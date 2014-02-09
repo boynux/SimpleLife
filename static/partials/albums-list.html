@@ -1,36 +1,13 @@
         <div class='contents'>
-         {% raw %}
-         <ul>
-             <li ng-repeat="album in albums">
-                {{album.name}}
+            {{ albums }}
+        <ul>
+             <li >
+                {{ album.name }}
              </li>
          </ul>
-         {% endraw %}
-            <div class='albums'>
-
-                {% for album in albums %}
-                <div class='album' style="background-image: url({{ album.icon.picture }}); width: {{ album.icon.width }}; height: {{ album.icon.height }}">
-                    <span>{{ album.name }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            <div id="fb-root"></div>
-            <script language='javascript' type='text/javascript'>>
-                window.fbAsyncInit = function() {
-                    FB.init({
-                        appId: '{{ facebook_app_id }}', 
-                        status: true, 
-                        cookie: true,
-                        xfbml: true,
-                    });
-                };
-
-                (function() {
-                     var e = document.createElement('script');
-                     e.type = 'text/javascript';
-                     e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
-                     e.async = true;
-                     document.getElementById('fb-root').appendChild(e);
-                 }());
-             </script>
-        </div>
+         <div class='albums'>
+             <div ng-repeat="album in albums" class='album' style="background-image: url({{ album.icon.picture }}); width: {{ album.icon.width }}; height: {{ album.icon.height }}">
+                 <span>{{ album.name }}</span>
+             </div>
+         </div>
+     </div>
