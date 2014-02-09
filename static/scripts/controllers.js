@@ -5,20 +5,19 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
     }
 ]);
 
-simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'fbAuthService', 
+simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'facebook', 
     function ($scope, $http, $facebook) {
         console.log ($facebook.connected);
         if ($facebook.connected) {
-            $facebook.getAlbumsList (function (result) {
+            $facebook.api ('me/albums').then (function (result) {
                 console.log (result);
-                $scope.$apply (function () {
-                    $scope.albums = result.data;
-                });
+                $scope.albums = result.data;
             });
         } else {
             $scope.$on ('fb.auth.authResponseChange', function (event, response) {
                 if (response.status === 'connected') {
-                    $facebook.getAlbumsList (function (result) {
+                    $facebook.api ('me/albums').then (function (result) {
+                        console.log (result);
                         $scope.albums = result.data;
                     });
                 }
