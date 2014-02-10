@@ -1,13 +1,7 @@
-        <div class='contents'>
-            {{ albums }}
-        <ul>
-             <li >
-                {{ album.name }}
-             </li>
-         </ul>
-         <div class='albums'>
-             <div ng-repeat="album in albums" class='album' style="background-image: url({{ album.icon.picture }}); width: {{ album.icon.width }}; height: {{ album.icon.height }}">
-                 <span>{{ album.name }}</span>
-             </div>
-         </div>
-     </div>
+<div ng-show='user' class='contents'>
+    <div class='albums'>
+        <div ng-repeat="album in albums" class='album' >
+            <fb-image label="{{album.name}}" reference="{{album.cover_photo}}"></fb-image>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,48 @@
+body {
+    text-align: center;
+
+    background-color: gray;
+}
+
+.context {
+    width: 800px;
+    background-color: black;
+    
+    margin: auto;
+    text-align: left;
+
+    padding: 1em;
+}
+
+.header {
+    padding: 1em;
+}
+
+a.album-select {
+    background-color: #666;
+}
+
+a.album-select:hover {
+    background-color: #666;
+}
+
+.albums {
+    margin: 1em 4em;
+
+    text-align: center;
+}
+
+.albums span {
+    position: relative;
+
+    top: 90%;
+    color: white;
+}
+
+.album-icon {
+    width: 160px;
+    height: 160px;
+
+    margin: 1px;
+    float: left;
+}

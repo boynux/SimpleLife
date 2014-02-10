@@ -1,20 +1,23 @@
 <html lang="en" ng-app="simpleLifeApp">
     <head>
+        <link rel='stylesheet' href='/static/css/generic.css' />
     </head>
     <body>
         <script language='javascript' type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.11/angular.min.js'></script>
         <script language='javascript' type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.11/angular-route.min.js'></script>
         <script language='javascript' type='text/javascript' src='/static/scripts/app.js'></script>
         <script language='javascript' type='text/javascript' src='/static/scripts/controllers.js'></script>
+        <script language='javascript' type='text/javascript' src='/static/scripts/facebook.js'></script>
 
-         
         <div class='context'>  
             <div class='header'>
                 <fb:login-button autologoutlink="true" scope="publish_stream,user_photos"></fb:login-button>
             </div>
-
+            <hr />
             <div id="fb-root"></div>
             <div ng-view></div>
+
+            <br clear='both' />
         </div>
     </body>
 </html>
