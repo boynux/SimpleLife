@@ -1,23 +1,53 @@
 <html lang="en" ng-app="simpleLifeApp">
     <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <link rel='stylesheet' href='/static/css/generic.css' />
-    </head>
-    <body>
+
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/static/css/cover.css">
+
         <script language='javascript' type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.11/angular.min.js'></script>
         <script language='javascript' type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/angularjs/1.2.11/angular-route.min.js'></script>
         <script language='javascript' type='text/javascript' src='/static/scripts/app.js'></script>
         <script language='javascript' type='text/javascript' src='/static/scripts/controllers.js'></script>
         <script language='javascript' type='text/javascript' src='/static/scripts/facebook.js'></script>
 
-        <div class='context'>  
-            <div class='header'>
-                <fb:login-button autologoutlink="true" scope="publish_stream,user_photos"></fb:login-button>
-            </div>
-            <hr />
-            <div id="fb-root"></div>
-            <div ng-view></div>
+    </head>
+    <body>
+        <div class='site-wrapper'>  
+            <div class='site-wrapper-inner'>  
+                <div class="cover-container">
+                    <div class='masthead clearfix'>
+                        <div class='inner'>
+                            <h3 class="masthead-brand"><fb:login-button autologoutlink="true" scope="publish_stream,user_photos"></fb:login-button></h3>
+                            <ul class="nav masthead-nav">
+                                <li class="active"><a href="#">Home</a></li>
+                                <li><a href="#">Features</a></li>
+                                <li><a href="#">Contact</a></li>
+                            </ul>
 
-            <br clear='both' />
+                        </div>
+                    </div>
+                    <div class="inner cover">
+                        <div id="fb-root"></div>
+                        <div ng-view></div>
+
+                        <br clear='both' />
+                    </div>
+                    <div class="mastfoot">
+                        <div class="inner">
+                            <p>Cover template for <a href="http://getbootstrap.com">Bootstrap</a>, by <a href="https://twitter.com/mdo">@mdo</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </body>
 </html>

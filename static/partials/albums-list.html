@@ -1,7 +1,10 @@
-<div ng-show='user' class='contents'>
+<div ng-show='user'>
+    <h1 class="cover-heading">Choose Albums:</h1>
+    <p class="lead">
     <div class='albums'>
         <div ng-repeat="album in albums" class='album' >
             <fb-image label="{{album.name}}" reference="{{album.cover_photo}}"></fb-image>
         </div>
     </div>
+    </p>
 </div>

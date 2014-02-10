@@ -1,10 +1,3 @@
-body {
-    text-align: center;
-
-    background-color: gray;
-    color: white;
-}
-
 .context {
     width: 800px;
     background-color: black;
@@ -19,17 +12,11 @@ body {
     padding: 1em;
 }
 
-a.album-select {
-    background-color: #666;
-}
-
-a.album-select:hover {
-    background-color: #666;
-}
-
 .albums {
     margin: 1em 4em;
 
+    overflow: auto;
+    height: 360px;
     text-align: center;
 }
 
@@ -37,13 +24,15 @@ a.album-select:hover {
     position: relative;
 
     top: 90%;
-    color: white;
+    color: black;
+
+    font-size: 85%;
 }
 
 .album-icon {
     width: 160px;
-    height: 160px;
+    height: 168px;
 
-    margin: 1px;
+    margin: 3px;
     float: left;
 }
