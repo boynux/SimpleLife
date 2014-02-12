@@ -8,6 +8,7 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
 simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'facebook', 
     function ($scope, $http, $facebook) {
         console.log ($facebook.connected);
+
         if ($facebook.connected) {
             $facebook.api ('me/albums').then (function (result) {
                 console.log (result);
@@ -23,26 +24,27 @@ simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'faceboo
                 }
             });
         }
-            /*
-        if (typeof FB !== 'undefined') {
-            FB.api ('me/albums', function (response) {
-                $scope.$apply (function () {
-                    $scope.albums = response
-                });
-            })
-        } else {
-            $facebook.addToQ (function ($scope) {
-                this.getAlbumsList ($scope);
-            }, $facebook, [$scope]);
-        }
-            */
-        /*
-        $http.get ('albums').success (function (data) {
-            $scope.albums = data;
-        });
+        
+        $scope.submit = function () {
+            var albums = [];
 
-        $scope.orderPrope = 'data';
-        */
+            angular.forEach (this.albums, function (album) {
+                albums.push (album.id);
+            });
+
+            console.log (albums);
+            $http.post ('albums', albums).success (
+                function (data, status, header, config) {
+                    console.log ('data posted successfully');
+
+                    $location.path ('/confirm');
+                }
+            );
+        }
+            
+        $scope.wobble = function () {
+            console.log (this);
+        }
     }
 ]);
 

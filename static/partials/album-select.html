@@ -1,3 +1,5 @@
-<div style="background: white url({{info.picture}}) scroll center center no-repeat;" class="album-icon">
-    <span>{{label}}</span>
-</div>
+<label>
+    <div ng-mouseenter="hover = true" ng-mouseleave="hover = false" ng-class="{ 'animated tada': hover }" style="background: url({{info.picture}}) scroll center center no-repeat;" class="album-icon thumbnail btn active">
+        <span><input type='checkbox' name='albums' checked value="{{ album.id }}" />{{label}}</span>
+    </div>
+</label>

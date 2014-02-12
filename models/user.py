@@ -16,6 +16,7 @@ class User (ndb.Model):
     create_time = ndb.DateTimeProperty (auto_now_add = True)
     last_seen = ndb.DateTimeProperty (auto_now = True)
     access_token = ndb.StringProperty ()
+    albums = ndb.StringProperty (repeated = True)
 
     @classmethod
     def get_user_by_id (cls, id):

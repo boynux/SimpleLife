@@ -1,15 +1,16 @@
-.context {
-    width: 800px;
-    background-color: black;
-    
-    margin: auto;
-    text-align: left;
+body {
+    padding-top: 70px;
 
-    padding: 1em;
+    background-color: #333333;
+    color: #eeeeee;
 }
 
-.header {
-    padding: 1em;
+.btn {
+    text-align: left;
+}
+
+.btn.active {
+    box-shadow: 0px 3px 5px rgba(255, 255, 255, 0.250) inset;
 }
 
 .albums {
@@ -20,19 +21,14 @@
     text-align: center;
 }
 
-.albums span {
-    position: relative;
-
-    top: 90%;
-    color: black;
-
-    font-size: 85%;
-}
-
 .album-icon {
     width: 160px;
     height: 168px;
 
-    margin: 3px;
-    float: left;
+}
+
+.album-icon span {
+    position: relative;
+    color: gray;
+    top: 90%;
 }

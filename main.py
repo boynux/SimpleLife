@@ -139,7 +139,7 @@ class AlbumsHandler (FacebookHandler):
     def get (self):
         albums = []
 
-        if self.current_user:
+        if current_user:
             all_albums = self.graph ('me/albums')
             
             if all_albums:
@@ -155,7 +155,14 @@ class AlbumsHandler (FacebookHandler):
             pass
 
         self.response.out.write (json.dumps (albums))
-        # self.display ('albums.html', albums = albums)
+
+    def post (self):
+        if self.current_user:
+            albums = json.loads (self.request.body);
+            user = User.get_user_by_id (self.current_user['id'])
+            user.albums = albums
+
+            user.put ()
 
 class LogoutHandler(FacebookHandler):
     def get(self):

@@ -1,10 +1,18 @@
-<div ng-show='user'>
-    <h1 class="cover-heading">Choose Albums:</h1>
-    <p class="lead">
-    <div class='albums'>
-        <div ng-repeat="album in albums" class='album' >
+<div ng-show='user' class='container-fluid'>
+    <form name='main' ng-submit='submit()'>
+    <h1>
+        Choose Albums:
+        <button type="submit" class="btn btn-primary btn-lg">Next</button>
+    </h1>
+    <div class="row">
+        <div ng-repeat="album in albums" class='col-md-3 form-group button-group' data-toggle='buttons' >
             <fb-image label="{{album.name}}" reference="{{album.cover_photo}}"></fb-image>
         </div>
     </div>
-    </p>
+    <script language="javascript" type="text/javascript">
+        $('.animate').mouseover (function () {
+            alert (this);
+        });
+    </script>
+    </form>
 </div>
