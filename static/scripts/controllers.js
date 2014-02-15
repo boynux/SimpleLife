@@ -5,8 +5,8 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
     }
 ]);
 
-simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', 'facebook', 
-    function ($scope, $http, $facebook) {
+simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$location', 'facebook', 
+    function ($scope, $http, $location, $facebook) {
         console.log ($facebook.connected);
 
         if ($facebook.connected) {
@@ -55,9 +55,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             $location.path ('/');
         }
     }
-]);
-
-simpleLifeControllers.controller ('SignOutCtrl', ['$scope', '$location', '$http', 
+]).controller ('SignOutCtrl', ['$scope', '$location', '$http', 
     function ($scope, $location, $http) {
         $http.get ('signout').success (function () {
             FB.logout (function (response) {
@@ -65,5 +63,18 @@ simpleLifeControllers.controller ('SignOutCtrl', ['$scope', '$location', '$http'
             });
         });
     }
-]);
+]).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', 
+    function ($rootScope, $scope, $location, $http, RenewToken, $sce) {
+        $http.get ('/pictures').success (function (info) {
+            console.log (info);
+        }).error (function (reason) {
+            $http.get ('/renew_token?redirect=/#/confirm').success (function (script) {
+                console.log (script);
+                RenewToken.script = $sce.trustAsHtml (script);
+            });
+        });
+    }
+]).controller ('RenewTokenCtrl', function ($scope, RenewToken) {
+    $scope.renewToken = RenewToken;
+});
 

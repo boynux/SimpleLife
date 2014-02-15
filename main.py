@@ -57,37 +57,33 @@ class FacebookHandler (webapp2.RequestHandler):
 
         return self.session.get ("user")
 
+    def get_renew_url (self, redirect_url):
+        # redirect to facebook OAuth page to 
+        # renew secret_token
+        self.session["redirect_url"] = self.request.url
+        self.response.out.write ("<script language='javascript'> top.location = \
+             'https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s'</script>" 
+             % (FACEBOOK_APP_ID, redirect_url)
+        )
+
+    def get_token_from_code (self, code, redirect_url):
+        access_token = facebook.get_access_token_from_code (
+            code,
+            redirect_url,
+            # self.request.GET["code"], 
+            # self.session.get ("redirect_url"), 
+            FACEBOOK_APP_ID, 
+            FACEBOOK_APP_SECRET
+        )
+
+        return access_token
+
     def graph (self, api, **args):
-        if "code" in self.request.query:
-            print (
-                self.session.get ("redirect_url"), 
-            )
-            access_token = facebook.get_access_token_from_code (
-                self.request.GET["code"], 
-                self.session.get ("redirect_url"), 
-                FACEBOOK_APP_ID, 
-                FACEBOOK_APP_SECRET
-            )
-
-            user = User.get_user_by_id (self.current_user['id'])
-            user.access_token = access_token
-            user.put ()
-
-            self.current_user["access_token"] = access_token
-
+        # if "code" in self.request.query:
+            
         graph = facebook.GraphAPI (self.current_user["access_token"])
+        return graph.get_object (api)
 
-        try:
-            return graph.get_object (api)
-        except facebook.GraphAPIError as error:
-            # redirect to facebook OAuth page to 
-            # renew secret_token
-            self.session["redirect_url"] = self.request.url
-            self.response.out.write ("<script language='javascript'> top.location = \
-                'https://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%s'</script>" % (FACEBOOK_APP_ID, self.request.url)
-            )
-
-        return None
     def dispatch (self):
         self.session_store = sessions.get_store (request = self.request)
 
@@ -163,7 +159,30 @@ class AlbumsHandler (FacebookHandler):
             user.albums = albums
 
             user.put ()
+class PicturesHandler (FacebookHandler):
+    def get (self):
+        if self.current_user:
+            user = User.get_user_by_id (self.current_user["id"])
 
+            for album in user.albums:
+                info = self.graph (album)
+
+                print info
+
+class TokenHandler (FacebookHandler):
+    def get (self):
+        if 'code' in self.request.GET:
+            token = self.get_token_from_code (self.request.GET['code'], self.request.url)
+
+            user = User.get_user_by_id (self.current_user['id'])
+            user.access_token = token["access_token"]
+            user.put ()
+
+            self.session["user"]["access_token"] = token["access_token"]
+            self.redirect ("/#/%s" % self.request.GET['redirect'])
+        else:
+            redirect_url = self.request.url
+            # self.get_renew_url (redirect_url);
 class LogoutHandler(FacebookHandler):
     def get(self):
         if self.current_user is not None:
@@ -175,6 +194,8 @@ application = webapp2.WSGIApplication ([
     ('/albums', AlbumsHandler),
     ('/signout', LogoutHandler),
     ('/current_user', CurrentUserHandler),
+    ('/pictures', PicturesHandler),
+    ('/renew_token', TokenHandler),
     # ('/([^/]+)/list', AlbumHandler),
     # ('/([^/]+)/upload', AddPhoto)
 ], config = CONFIG, debug = True)
