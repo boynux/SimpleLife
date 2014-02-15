@@ -1,4 +1,4 @@
-SimpleLift
+SimpleLife
 ==========
 
 Persnal Facebook App project
