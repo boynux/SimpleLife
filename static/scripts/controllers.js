@@ -68,10 +68,12 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
         $http.get ('/pictures').success (function (info) {
             console.log (info);
         }).error (function (reason) {
-            $http.get ('/renew_token?redirect=/#/confirm').success (function (script) {
-                console.log (script);
-                RenewToken.script = $sce.trustAsHtml (script);
-            });
+            !!reason && console.log (reason);
+            $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
+                .success (function (response) {
+                    console.log (response);
+                    RenewToken.script = $sce.trustAsHtml (response);
+                });
         });
     }
 ]).controller ('RenewTokenCtrl', function ($scope, RenewToken) {
