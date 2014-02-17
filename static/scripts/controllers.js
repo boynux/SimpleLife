@@ -67,6 +67,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
     function ($rootScope, $scope, $location, $http, RenewToken, $sce) {
         $http.get ('/pictures').success (function (info) {
             console.log (info);
+            $scope.albums = info;
         }).error (function (reason) {
             !!reason && console.log (reason);
             $http.post ("/renew_token", {redirect_url: $location.absUrl ()})

@@ -5,7 +5,7 @@
         <button type="submit" class="btn btn-primary btn-lg">Next</button>
     </h1>
     <div class="row">
-        <div ng-repeat="album in albums" class='col-md-3 form-group button-group' data-toggle='buttons' >
+        <div ng-repeat="album in albums" class='col-md-3 col-sm-4 form-group button-group' data-toggle='buttons' >
             <fb-image label="{{album.name}}" reference="{{album.cover_photo}}"></fb-image>
         </div>
     </div>

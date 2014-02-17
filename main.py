@@ -73,8 +73,9 @@ class PicturesHandler (FacebookHandler):
             user = User.get_user_by_id (self.current_user["id"])
 
             for album in user.albums:
-                info.append (self.graph (album))
+                info.append (self.graph ("%s/photos" % album, fields="picture"))
 
+        # print info
         self.response.out.write (json.dumps (info))
 
 class TokenHandler (FacebookHandler):
