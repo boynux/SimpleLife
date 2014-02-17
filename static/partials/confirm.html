@@ -7,8 +7,8 @@
         <div class='col-md-12' ng-repeat="album in albums">
             Album
             <div class='row'>
-                <div class='col-md-2' ng-repeat="photo in album.data">
-                    <div style="background: rgba(255,255,255,.35) url({{photo.picture}}) no-repeat scroll bottom center; height: 100px; margin: 2px;"></div>
+                <div class='col-md-2 col-sm-3 col-xs-4' ng-repeat="photo in album.data">
+                    <div style="background: rgba(255,255,255,.35) url({{photo.picture}}) no-repeat scroll bottom center; width: 100px; height: 100px; margin: .2em auto;"></div>
                 </div>
         </div>
     </div>
