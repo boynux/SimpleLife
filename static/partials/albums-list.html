@@ -1,12 +1,15 @@
-<div ng-show='user' class='container-fluid'>
+<div ng-show='user' class='container-fluid' ng-controller='AlbumsListCtrl'>
     <form name='main' ng-submit='submit()'>
     <h1>
         Choose Albums:
         <button type="submit" class="btn btn-primary btn-lg">Next</button>
     </h1>
-    <div class="row">
-        <div ng-repeat="album in albums" class='col-md-3 col-sm-4 form-group button-group' data-toggle='buttons' >
-            <fb-image label="{{album.name}}" reference="{{album.cover_photo}}"></fb-image>
+    <div class="row albums">
+        <div ng-repeat="album in albums" class='col-md-3 col-sm-4 form-group button-group'>
+            <fb-image label="{{album.name}}" reference="{{album.cover_photo}}">
+                <span ng-show="false">{{album.selected = selected}}</span>
+                <span>{{album.name}}</span>
+            </fb-image>
         </div>
     </div>
     <script language="javascript" type="text/javascript">

@@ -22,9 +22,6 @@ class CurrentUserHandler (FacebookHandler):
 
 class MainPage (FacebookHandler):
     def get (self):
-        # if not self.current_user:
-        #    self.redirect ("/signin")
-
         self.display ()
 
 class SignInPage (FacebookHandler):
@@ -60,9 +57,9 @@ class AlbumsHandler (FacebookHandler):
 
     def post (self):
         if self.current_user:
-            albums = json.loads (self.request.body);
+            data = json.loads (self.request.body)
             user = User.get_user_by_id (self.current_user['id'])
-            user.albums = albums
+            user.albums = data["albums"]
 
             user.put ()
 
@@ -75,7 +72,6 @@ class PicturesHandler (FacebookHandler):
             for album in user.albums:
                 info.append (self.graph ("%s/photos" % album, fields="picture"))
 
-        # print info
         self.response.out.write (json.dumps (info))
 
 class TokenHandler (FacebookHandler):

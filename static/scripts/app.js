@@ -45,9 +45,10 @@ simpleLifeApp.directive('fbSignin', function () {
     }
 });
 
-simpleLifeApp.directive('fbImage', function (facebook) {
+simpleLifeApp.directive('fbImage', function ($parse, facebook) {
     function link (scope, element, attrs) {
         scope.label = attrs.label;
+        scope.model = attrs
 
         facebook.api (attrs.reference).then (function (result) {
             console.log (element);
@@ -56,6 +57,7 @@ simpleLifeApp.directive('fbImage', function (facebook) {
     }
 
     return {
+        transclude: true,
         restrict:'E',
         templateUrl: 'partials/album-select.html',
         link: link

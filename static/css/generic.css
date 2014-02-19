@@ -6,13 +6,18 @@ body {
 }
 
 .btn {
-    text-align: left;
+    text-align: center;
 }
 
 .btn.active {
-    box-shadow: 0px 3px 5px rgba(255, 255, 255, 0.250) inset;
+    box-shadow: 0px 2px 5px rgba(255, 255, 255, 0.60) inset;
 }
 
+.albums .selected {
+    border: 2px solid rgba(100, 100, 240, 1);
+    box-shadow: 0px 2px 5px rgba(100, 100, 240, 0.60) inset;
+}
+/*
 .albums {
     margin: 1em 4em;
 
@@ -20,7 +25,7 @@ body {
     height: 360px;
     text-align: center;
 }
-
+*/
 .album-icon {
     width: 160px;
     height: 168px;

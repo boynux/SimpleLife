@@ -1,3 +1,5 @@
+'use strict'
+
 var simpleLifeControllers = angular.module ('simpleLifeControllers', []);
 
 simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
@@ -29,11 +31,12 @@ simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$locati
             var albums = [];
 
             angular.forEach (this.albums, function (album) {
-                albums.push (album.id);
+                if (album.selected) {
+                    albums.push (album.id);
+                }
             });
 
-            console.log (albums);
-            $http.post ('albums', albums).success (
+            $http.post ('albums', {albums: albums}).success (
                 function (data, status, header, config) {
                     console.log ('data posted successfully');
 

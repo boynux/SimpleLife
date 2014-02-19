@@ -1,5 +1,10 @@
-<label>
-    <div ng-mouseenter="hover = true" ng-mouseleave="hover = false" ng-class="{ 'animated tada': hover }" style="background: url({{info.picture}}) scroll center center no-repeat;" class="album-icon thumbnail btn active">
-        <span><input type='checkbox' name='albums' checked value="{{ album.id }}" />{{label}}</span>
-    </div>
-</label>
+<div 
+    ng-init="selected = true"
+    ng-click="selected = !selected"
+    ng-class="{'selected': selected}"
+    style="background: url({{info.picture}}) scroll center center no-repeat;" 
+    class="album-icon thumbnail btn" 
+    ng-transclude
+    >
+    
+</div>

@@ -11,10 +11,10 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
         window.fbAsyncInit = function() {
             FB.init(params || defaultParams);
     
-            processQ ();
-
             initialized = true;
-            console.log ("Faacebook initialization done.");
+            console.log ("Facebook initialization done.");
+
+            processQ ();
         };
 
         (function() {
@@ -49,14 +49,12 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
     var defer = function (func, deferred, $scope) {
         func (function (response) {
             if (response && response.error) {
-                $scope.$apply (function () {
-                    deferred.reject (response);
-                });
+                deferred.reject (response);
             } else {
-                $scope.$apply (function () {
-                    deferred.resolve (response);
-                });
+                deferred.resolve (response);
             }
+
+            $scope.$apply ();
         });
     };
 

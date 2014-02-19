@@ -79,7 +79,7 @@ class FacebookHandler (webapp2.RequestHandler):
 
                 if not user:
                     graph = facebook.GraphAPI (cookie["access_token"])
-                    access_token = facebook.extend_access_token (FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
+                    access_token = graph.extend_access_token (FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
 
                     user_info = graph.get_object ("me")
                     user_info["updated_time"] = \
@@ -90,7 +90,8 @@ class FacebookHandler (webapp2.RequestHandler):
                     user_info["id"] = int(user_info["id"])
 
                     user = User (parent = ndb.Key ("Account", "Facebook"), **user_info)
-                    user.access_token = result["access_token"]
+                    user.access_token = access_token["access_token"]
+                    # user.access_token = user_info["access_token"]
 
                 elif user.access_token != cookie["access_token"]:
                     user.access_token = cookie["access_token"]
