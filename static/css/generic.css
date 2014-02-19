@@ -17,6 +17,10 @@ body {
     border: 2px solid rgba(100, 100, 240, 1);
     box-shadow: 0px 2px 5px rgba(100, 100, 240, 0.60) inset;
 }
+
+.albums {
+    margin: auto;
+}
 /*
 .albums {
     margin: 1em 4em;
