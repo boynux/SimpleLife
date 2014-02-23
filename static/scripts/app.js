@@ -17,8 +17,8 @@ var simpleLifeApp = angular.module ('simpleLifeApp', [
                 controller: 'SigninCtrl'
             }).
             when ('/albums', {
-                templateUrl: 'partials/albums-list.html',
-                controller: 'AlbumsListCtrl'
+                templateUrl: 'partials/albums.html',
+                controller: 'AlbumsCtrl'
             }).
             when ('/signout', {
                 templateUrl: 'partials/signout.html',

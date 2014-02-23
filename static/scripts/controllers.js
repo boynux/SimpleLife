@@ -7,8 +7,14 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
     }
 ]);
 
-simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$location', 'facebook', 
-    function ($scope, $http, $location, $facebook) {
+simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $location) {
+    $scope.add_album = function () {
+        console.log ('adding new album');
+    }
+});
+
+simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$location', 'facebook', 'RenewToken', '$sce', 
+    function ($scope, $http, $location, $facebook, RenewToken, $sce) {
         console.log ($facebook.connected);
 
         if ($facebook.connected) {
@@ -42,7 +48,14 @@ simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$locati
 
                     $location.path ('/confirm');
                 }
-            );
+            ).error (function (reason) {
+                !!reason && console.log (reason);
+                $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
+                .success (function (response) {
+                    console.log (response);
+                    RenewToken.script = $sce.trustAsHtml (response);
+                });
+            });
         }
             
         $scope.wobble = function () {
@@ -77,7 +90,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
 
             var clientSize = {
                 width : document.body.clientWidth - 300,
-                height : document.body.clientHeight
+                height : 2000
             };
 
             var itemSize = 100;
@@ -108,20 +121,57 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                     // velocityRotate: 50,
                     backgroundImage: id,
                     backgroundColor: '#FFFFFF'
+                }).attach ({
+                    "click": function (ev) {
+                        console.log (ev);  
+                    }
                 }).addTo(layer);
 
                 items.push(item);
             });
 
-            var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
+            var layoutFunctions = [explodeImages];
+            // var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
             var layoutSelectedIndex = -1;
 
             collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
                 layoutFunctions[layoutSelectedIndex]();
-            }, 3000);
+            }, 5000);
 
             itemCount = items.length;
+
+            function explodeImages () {
+                var countX = Math.ceil(Math.sqrt(itemCount));
+                var countY = Math.ceil(itemCount/countX);
+                // var offsetX = - (countX/2)*itemSize;
+                // var offsetY = - (countY/2)*itemSize;
+                var offsetX = - clientSize.width / 2;
+                var offsetY = - clientSize.height / 2;
+
+                arrangeItems(function(i) {
+                    var fill = {
+                        x: clientSize.width / countX,
+                        y: clientSize.height / countY
+                    };
+
+                    return {
+                        x: offsetX + (i % countX) * fill.x + (fill.x - itemSize * Math.random ()),
+                        y: offsetY + parseInt (i / countX) * fill.y + (fill.y - itemSize * Math.random ()),
+                        width: itemSize,
+                        height: itemSize,
+                        // angle: 90 * Math.random (),
+                        originX: "top",
+                        originY: "left"
+                    }
+                }, function(frame, idx, info){
+                    if (info.width > 0.4){
+                        // info.width -= 0.4;
+                        // info.height -= 0.4;
+                    }
+                });
+
+            }
 
             function layoutHorizontal(){
                 var offsetX = - (itemCount / 2) * itemSize;
@@ -248,6 +298,11 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             collie.Renderer.addLayer(layer);
             collie.Renderer.load(document.getElementById("container"));
             collie.Renderer.start();
+
+            $scope.$on('$destroy', function(){
+                while (itemAnimations.length)
+                    itemAnimations.pop().stop();
+            });
         }).error (function (reason) {
             !!reason && console.log (reason);
             $http.post ("/renew_token", {redirect_url: $location.absUrl ()})

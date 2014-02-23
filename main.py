@@ -4,12 +4,14 @@ import facebook
 import datetime
 from google.appengine.ext import ndb
 from webapp2_extras import sessions
+from google.appengine.api import taskqueue
 
 import json
 import os
 
 from config import *
 from models.user import User
+from models.album import Album
 
 from handlers import FacebookHandler, fb_require_token
 
@@ -58,10 +60,21 @@ class AlbumsHandler (FacebookHandler):
     def post (self):
         if self.current_user:
             data = json.loads (self.request.body)
-            user = User.get_user_by_id (self.current_user['id'])
-            user.albums = data["albums"]
 
-            user.put ()
+            user = User.get_user_by_id (self.current_user['id'])
+
+            for id in data["albums"]:
+                info = self.graph (id)
+                
+                album = user.add_album (info)
+            if len(data["albums"]):
+                taskqueue.add(url='/extractor', params = {'user': user.id})
+    
+class PictureExtractor (FacebookHandler):
+    def post (self):
+        user_id = self.request.get ('user')
+
+        print 'task queue recevied user id: %s' % user_id
 
 class PicturesHandler (FacebookHandler):
     def get (self):
@@ -70,7 +83,7 @@ class PicturesHandler (FacebookHandler):
             user = User.get_user_by_id (self.current_user["id"])
 
             for album in user.albums:
-                info.append (self.graph ("%s/photos" % album, fields="picture"))
+                info.append (self.graph ("%s/photos" % album.id, fields="picture"))
 
         self.response.out.write (json.dumps (info))
 
@@ -115,6 +128,7 @@ application = webapp2.WSGIApplication ([
     ('/current_user', CurrentUserHandler),
     ('/pictures', PicturesHandler),
     ('/renew_token', TokenHandler),
+    ('/extractor', PictureExtractor),
     # ('/([^/]+)/list', AlbumHandler),
     # ('/([^/]+)/upload', AddPhoto)
 ], config = CONFIG, debug = True)

@@ -1,4 +1,5 @@
 from google.appengine.ext import ndb
+from album import Album
 
 class User (ndb.Model):
     id = ndb.IntegerProperty ()
@@ -16,7 +17,6 @@ class User (ndb.Model):
     create_time = ndb.DateTimeProperty (auto_now_add = True)
     last_seen = ndb.DateTimeProperty (auto_now = True)
     access_token = ndb.StringProperty ()
-    albums = ndb.StringProperty (repeated = True)
 
     @classmethod
     def get_user_by_id (cls, id):
@@ -27,4 +27,19 @@ class User (ndb.Model):
             return user[0]
         else:
             return None
+
+    def add_album (self, info):
+        album = Album (parent = self.key)
+
+        album.id = int (info["id"])
+        album.count = info["count"]
+
+        album.put ()
+        return album
+
+    @property
+    def albums (self):
+        albums = Album.query (ancestor = self.key).fetch ()
+
+        return albums
 
