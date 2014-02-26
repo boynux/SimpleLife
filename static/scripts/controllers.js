@@ -7,32 +7,91 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
     }
 ]);
 
-simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $location) {
-    $scope.add_album = function () {
+simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $location, facebook, facebookService, RenewToken, $sce, Album) {
+    $scope.albums = Album.query ();
+
+    console.log ($scope.albums);
+
+    $scope.facebook = facebookService;
+
+    $('#addNewAlbum').on ('shown.bs.modal', function (e) {
+        checkFbPermissions ();
+        
+        $scope.templateUrl = "partials/albums-list.html";
         console.log ('adding new album');
+    });
+
+    var checkFbPermissions = function () {
+        facebook.api ('/me/permissions').then (function (response) {
+            console.log (response);
+            if (angular.isUndefined (response.data[0].user_photos)) {
+                $scope.needsPhotoPermission = true;
+            } else {
+                $scope.needsPhotoPermission = false;
+                $scope.message = "permission has been granted!";
+            }
+        });
+    }
+
+    $scope.saveSelectedAlbums = function () {
+        var selectedAlbums = [];
+        var album = new Album ({name: 'test2'});
+
+        album.$save ();
+        $scope.albums = Album.query ();
+
+        $('#addNewAlbum').modal ('hide');
+ 
+/*       
+        $http.post ('albums', {"albums": facebookService.getSelectedAlbums ()}).success (
+            function (data, status, header, config) {
+                console.log ('data has been posted');
+            }
+        ).error (function (reason) {
+            !!reason && console.log (reason);
+            $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
+            .success (function (response) {
+                console.log (response);
+                RenewToken.script = $sce.trustAsHtml (response);
+            });
+        }); 
+*/
+        // $scope.templateUrl = "partials/confirm.html";
+        /*
+        $http.post ('albums', {"albums": facebookService.getSelectedAlbums ()}).success (
+            function (data, status, header, config) {
+
+                $http.get ('/pictures').success (function (info) {
+                    console.log (info);
+                    $scope.album_photos = info;
+                });
+            }
+        ).error (function (reason) {
+            !!reason && console.log (reason);
+            $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
+            .success (function (response) {
+                console.log (response);
+                RenewToken.script = $sce.trustAsHtml (response);
+            });
+        }); 
+        */
+    }
+
+    $scope.grantFbPhotoPermission = function () {
+        facebook.login ({scope: "user_photos"}).then (function (response) {
+            checkFbPermissions ();
+        });
     }
 });
 
-simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$location', 'facebook', 'RenewToken', '$sce', 
-    function ($scope, $http, $location, $facebook, RenewToken, $sce) {
-        console.log ($facebook.connected);
-
-        if ($facebook.connected) {
-            $facebook.api ('me/albums').then (function (result) {
-                console.log (result);
-                $scope.albums = result.data;
-            });
-        } else {
-            $scope.$on ('fb.auth.authResponseChange', function (event, response) {
-                if (response.status === 'connected') {
-                    $facebook.api ('me/albums').then (function (result) {
-                        console.log (result);
-                        $scope.albums = result.data;
-                    });
-                }
-            });
-        }
-        
+simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$location', 'facebookService', 'RenewToken', '$sce', 
+    function ($scope, $http, $location, facebookService, RenewToken, $sce) {
+       
+        facebookService.getAlbums ().then (function (response) {
+            console.log ('response: ', response);
+            $scope.albumsList = response.data;
+        });
+                
         $scope.submit = function () {
             var albums = [];
 

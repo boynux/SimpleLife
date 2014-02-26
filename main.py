@@ -37,10 +37,20 @@ class SignInPage (FacebookHandler):
         self.response.out.write (json.dumps (response));
 
 class AlbumsHandler (FacebookHandler):
-    def get (self):
+    def get (self, albumId):
         albums = []
 
-        if current_user:
+        if self.current_user:
+            user = User.get_user_by_id (self.current_user["id"])
+
+            if albumId:
+                result = Album.query (albumId, ancestor = user.key).fetch ()
+            else:
+                result = [
+                    {"id": album.id, "name": album.name} 
+                    for album in user.albums
+                ]
+            """
             all_albums = self.graph ('me/albums')
             
             if all_albums:
@@ -52,23 +62,28 @@ class AlbumsHandler (FacebookHandler):
                         dikt = album
                     ) for album in all_albums["data"]
                 ]
+            """
         else:
             pass
 
-        self.response.out.write (json.dumps (albums))
+        self.response.out.write (json.dumps (result))
 
-    def post (self):
+    def post (self, action):
         if self.current_user:
             data = json.loads (self.request.body)
 
-            user = User.get_user_by_id (self.current_user['id'])
+            if self.current_user:
+                user = User.get_user_by_id (self.current_user['id'])
 
-            for id in data["albums"]:
-                info = self.graph (id)
+            # for album in data["albums"]:
+                #info = self.graph (album["id"])
                 
-                album = user.add_album (info)
-            if len(data["albums"]):
-                taskqueue.add(url='/extractor', params = {'user': user.id})
+                # album = user.add_album (info)
+
+            if data:
+                album = user.add_album (data)
+
+                taskqueue.add(url='/extractor', params = {'user': user.id, "album": album.id})
     
 class PictureExtractor (FacebookHandler):
     def post (self):
@@ -82,7 +97,9 @@ class PicturesHandler (FacebookHandler):
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
 
-            for album in user.albums:
+            albums = Album.query (ancestor = user.key).fetch ()
+
+            for album in albums:
                 info.append (self.graph ("%s/photos" % album.id, fields="picture"))
 
         self.response.out.write (json.dumps (info))
@@ -92,6 +109,7 @@ class TokenHandler (FacebookHandler):
         if 'code' in self.request.GET:
             token = self.get_token_from_code (self.request.GET['code'], self.request.path_url)
 
+            print token, self.current_user
             user = User.get_user_by_id (self.current_user['id'])
             user.access_token = token["access_token"]
             user.put ()
@@ -123,7 +141,7 @@ class LogoutHandler(FacebookHandler):
 application = webapp2.WSGIApplication ([
     ('/', MainPage),
     ('/signin', SignInPage),
-    ('/albums', AlbumsHandler),
+    ('/albums(/\d+)?', AlbumsHandler),
     ('/signout', LogoutHandler),
     ('/current_user', CurrentUserHandler),
     ('/pictures', PicturesHandler),

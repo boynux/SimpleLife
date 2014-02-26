@@ -1,12 +1,13 @@
 <div ng-show='user' class='container-fluid'>
-    <form name='main' ng-submit='submit()'>
-    <h1>
-        <button type="submit" class="btn btn-primary btn-lg">Show me albums</button>
-    </h1>
-    <div class='row'>
+    <div class='row' ng-repeat='album in facebook.getSelectedAlbums()'>
         <div class='col-md-12'>
+            <div class='row'>
+                <div class='col-md-2' ng-repeat='photo in facebook.getAlbumPhotos(album.id)'>
+                    <div style="margin-top: 100%" class="thumbnail">
+                        <div style="background: url({{photo.picture}}) scroll center center no-repeat; position: absolute; top: 0; bottom: 0; left: 0; right: 0; border: 4px solid white;"> </div>
+                </div>
+            </div>
             <div id='container'></div>
         </div>
     </div>
-    </form>
 </div>

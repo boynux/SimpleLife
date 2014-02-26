@@ -2,6 +2,7 @@
 
 var simpleLifeApp = angular.module ('simpleLifeApp', [
     'ngRoute',
+    'ngResource',
     'simpleLifeControllers',
     'facebook'
 ]).config (['$routeProvider', 'facebookProvider',
@@ -18,7 +19,7 @@ var simpleLifeApp = angular.module ('simpleLifeApp', [
             }).
             when ('/albums', {
                 templateUrl: 'partials/albums.html',
-                controller: 'AlbumsCtrl'
+                controller: 'AlbumsCtrl',
             }).
             when ('/signout', {
                 templateUrl: 'partials/signout.html',
@@ -90,3 +91,101 @@ simpleLifeApp.run (['$rootScope', '$http', 'facebook',
         });
     }
 ]);
+
+simpleLifeApp.service ('facebookService', function (facebook, $rootScope, $q) {
+    var albums = [];
+    var selectedAlbums = [];
+    var selectedPhotos = [];
+
+    var promiseWhenConnectedApi = function (callback) {
+        if (facebook.connected) {
+            var promise = callback ();
+        } else {
+            var defer = $q.defer ();
+
+            $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
+                if (response.status === 'connected') {
+                    defer.resolve (callback ());
+                }
+            });
+
+            var promise = defer.promise;
+        }
+
+        return promise;
+    }
+
+    return {
+        getAlbums: function () {
+            var promise =
+                promiseWhenConnectedApi (function () {
+                    return facebook.api ('me/albums');
+                });
+
+            /*
+            if (facebook.connected) {
+                return facebook.api ('me/albums');
+            } else {
+                var defer = $q.defer ();
+
+                $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
+                    if (response.status === 'connected') {
+                        defer.resolve (facebook.api ('me/albums'));
+                    }
+                });
+
+                return defer.promise;
+            }
+            */
+            return promise;
+        },
+        
+        getAlbumPhotos: function (album_id) {
+            return promiseWhenConnectedApi (function () {
+                return facebook.api ('me/' + album_id + '/photos?fields=picture')
+            });
+
+            if (facebook.connected) {
+                var promise = facebook.api ('me/album_id/photos').then (function (result) {
+                    console.log (result);
+                });
+            } else {
+                $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
+                    if (response.status === 'connected') {
+                        var promise = facebook.api ('me/albums').then (function (result) {
+                            console.log (result);
+                        });
+                    }
+                });
+            }
+
+            return promise;
+        },
+
+        selectedAlbum: function (album, selected) {
+            if (selected) {
+                if (selectedAlbums.indexOf (album) < 0)
+                    selectedAlbums.push (album);
+            } else {
+                var index = selectedAlbums.indexOf (album);
+
+                if (index > -1) {
+                    selectedAlbums.splice (index, 1)
+                }
+            }
+        },
+        
+        getSelectedAlbums: function () {
+            return selectedAlbums;
+        },
+
+        albums: function () {
+            return albums;
+        }
+    };
+});
+
+simpleLifeApp.factory ('Album', function ($resource) {
+    return $resource ('albums/:id', {albumId: '@id'});
+});
+

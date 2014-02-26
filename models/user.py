@@ -31,8 +31,10 @@ class User (ndb.Model):
     def add_album (self, info):
         album = Album (parent = self.key)
 
-        album.id = int (info["id"])
-        album.count = info["count"]
+        album.name = info["name"]
+        album.status = 0
+        album.images = []
+        album.progress = 0
 
         album.put ()
         return album

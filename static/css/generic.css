@@ -5,6 +5,10 @@ body {
     color: #eeeeee;
 }
 
+.modal {
+    color: #333;
+}
+
 .btn {
     text-align: center;
 }

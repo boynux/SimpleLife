@@ -68,9 +68,21 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
                 });
             });
         };
-        
+ 
+        var login = function (params) {
+            var deferred = $q.defer ();
+
+            defer (function (callback) {
+                FB.login (function (response) {
+                    callback (response);
+                }, params);
+            }, deferred, $rootScope);
+
+            return deferred.promise;
+        }
+       
         var api = function (path) {
-            deferred = $q.defer ();
+            var deferred = $q.defer ();
 
             defer (function (callback) {
                 FB.api (path, function (response) {
@@ -88,7 +100,8 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
         }
 
         return  {
-            api: api
+            api: api,
+            login: login
         }
     }];
 });

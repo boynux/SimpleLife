@@ -93,10 +93,10 @@ class FacebookHandler (webapp2.RequestHandler):
                     user.access_token = access_token["access_token"]
                     # user.access_token = user_info["access_token"]
 
-                elif user.access_token != cookie["access_token"]:
-                    user.access_token = cookie["access_token"]
+                # elif user.access_token != cookie["access_token"]:
+                #   user.access_token = cookie["access_token"]
                     
-                user.put ()
+                    user.put ()
                     
                 self.add_user_to_session (user)
             else:
