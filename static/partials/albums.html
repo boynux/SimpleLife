@@ -1,0 +1,42 @@
+<div ng-show='user' class='container-fluid'>
+    <form name='main' ng-submit='submit()'>
+    <div class="row albums">
+        <div class="col-md-3 col-sm-4 col-xs-6 thumbnail btn" data-toggle='modal' data-target='#addNewAlbum'>
+            <div style='margin-top: 100%'></div>
+            <div style='position: absolute; top: 0; left: 0; bottom: 0; right: 0' >
+                <span class='glyphicon glyphicon-plus' style='padding-top: calc(50% - 1em)'></span>
+            </div>
+        </div>
+        <div ng-repeat="album in albums" ng-click="$location.path ('/pictures')" class="col-md-3 col-sm-4 col-xs-6 thumbnail btn">
+            <div style='margin-top: 100%'></div>
+            <div style='position: absolute; top: 0; left: 0; bottom: 0; right: 0' >
+                <h2 style='padding-top: calc(100% - 2em)'>{{album.name}}</h2>
+            </div>
+        </div>
+    </div>
+    </form>
+    <div class="modal fade" id='addNewAlbum' tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">You are about to add a new album</h4>
+          </div>
+          <div class="modal-body">
+            <p ng-show='needsPhotoPermission' class="alert alert-info">
+                In order to create your new intractive album, the SimpleLife app needs your permission to retreive 
+                your Facebook&copy; albums. 
+                <button ng-click="grantFbPhotoPermission()">Please click here to grant this permission.</button>
+            </p>
+            <div ng-if="needsPhotoPermission == false" class="container-fluid">
+                <ng-include src="templateUrl"></ng-include>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" ng-click='saveSelectedAlbums()'>Save changes</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+</div>
+

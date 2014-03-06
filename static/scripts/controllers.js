@@ -16,7 +16,7 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
 
     $('#addNewAlbum').on ('shown.bs.modal', function (e) {
         checkFbPermissions ();
-        
+
         $scope.templateUrl = "partials/albums-list.html";
         console.log ('adding new album');
     });
@@ -35,7 +35,10 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
 
     $scope.saveSelectedAlbums = function () {
         var selectedAlbums = [];
-        var album = new Album ({name: 'test2'});
+        var album = new Album ({
+            name: 'test2', 
+            fb_albums: facebookService.getSelectedAlbums ()
+        });
 
         album.$save ();
         $scope.albums = Album.query ();
@@ -142,7 +145,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
     function ($rootScope, $scope, $location, $http, RenewToken, $sce) {
         $http.get ('/pictures').success (function (info) {
             console.log (info);
-            $scope.albums = info;
+            $scope.pictures = info;
 
             var itemColors = ['#74ff00', '#88ff00', '#9dff00', '#b2ff00', '#c7ff00', '#b2ff00', '#9dff00', '#88ff00'];
             var itemAnimations = [];
@@ -163,16 +166,14 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             var items = [];
             var itemCount = 0;
 
-            angular.forEach ($scope.albums, function (album) {
-                angular.forEach (album.data, function (photo) {
-                    pictures[photo.id] = photo.picture;
-                });
+            angular.forEach ($scope.pictures, function (photo, index) {
+                pictures[index] = photo;
             });
 
             collie.ImageManager.add(pictures);
 
             angular.forEach (pictures, function (link, id) {
-                item = new collie.DisplayObject({
+                var item = new collie.DisplayObject({
                     x: clientSize.width / 2,
                     y: clientSize.height / 2,
                     width: itemSize,
@@ -189,8 +190,8 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                 items.push(item);
             });
 
-            var layoutFunctions = [explodeImages];
-            // var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
+            // var layoutFunctions = [explodeImages];
+            var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
             var layoutSelectedIndex = -1;
 
             collie.Timer.repeat(function(oEvent){
@@ -248,8 +249,8 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                     }
                 }, function(frame, idx, info){
                     if (info.width > 0.4){
-                        info.width -= 0.4;
-                        info.height -= 0.4;
+                        info.width *= 0.99;
+                        info.height *= 0.99;
                     }
                 });
             }

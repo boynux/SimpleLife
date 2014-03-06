@@ -33,7 +33,7 @@ class SignInPage (FacebookHandler):
         if self.current_user:
             response["success"] = True
             response["id"] = self.current_user["id"]
- 
+
         self.response.out.write (json.dumps (response));
 
 class AlbumsHandler (FacebookHandler):
@@ -77,32 +77,50 @@ class AlbumsHandler (FacebookHandler):
 
             # for album in data["albums"]:
                 #info = self.graph (album["id"])
-                
+
                 # album = user.add_album (info)
 
             if data:
                 album = user.add_album (data)
+                taskqueue.add(url='/extractor', params = {'user': user.id, "album": album.key.id (), 'fb_albums': json.dumps (data["fb_albums"])})
 
-                taskqueue.add(url='/extractor', params = {'user': user.id, "album": album.id})
-    
-class PictureExtractor (FacebookHandler):
+class PictureExtractor (webapp2.RequestHandler):
     def post (self):
         user_id = self.request.get ('user')
-
         print 'task queue recevied user id: %s' % user_id
+
+        album_key = self.request.get ('album')
+        fb_albums = json.loads (self.request.get ('fb_albums'))
+        images = []
+
+        user = User.get_user_by_id (user_id)
+        album = ndb.Key (Album, int(album_key), parent=user.key).get ()
+
+        graph = facebook.GraphAPI (user.access_token)
+
+        albums_count = len(fb_albums)
+
+        for fb_album in fb_albums:
+            images_list = graph.get_object ("%s/photos" % fb_album["id"], fields="images")
+            if images_list:
+                images.extend ([item["images"][0]["source"] for item in images_list["data"]])
+
+        album.images = images
+        album.put ()
 
 class PicturesHandler (FacebookHandler):
     def get (self):
-        info = []
+        images = []
+
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
 
             albums = Album.query (ancestor = user.key).fetch ()
 
             for album in albums:
-                info.append (self.graph ("%s/photos" % album.id, fields="picture"))
+                images.extend (album.images)
 
-        self.response.out.write (json.dumps (info))
+        self.response.out.write (json.dumps (images))
 
 class TokenHandler (FacebookHandler):
     def get (self):

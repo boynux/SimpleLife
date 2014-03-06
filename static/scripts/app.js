@@ -21,6 +21,10 @@ var simpleLifeApp = angular.module ('simpleLifeApp', [
                 templateUrl: 'partials/albums.html',
                 controller: 'AlbumsCtrl',
             }).
+            when ('/pictures', {
+                templateUrl: 'partials/confirm.html',
+                controller: 'ConfirmCtrl',
+            }).
             when ('/signout', {
                 templateUrl: 'partials/signout.html',
                 controller: 'SignOutCtrl'
@@ -65,8 +69,9 @@ simpleLifeApp.directive('fbImage', function ($parse, facebook) {
     }
 });
 
-simpleLifeApp.run (['$rootScope', '$http', 'facebook', 
-    function ($rootScope, $http, facebook) {
+simpleLifeApp.run (['$rootScope', '$http', 'facebook', '$location',
+    function ($rootScope, $http, facebook, $location) {
+        $rootScope.$location = $location;
         $rootScope.user = false;
         $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
             if (response.status == 'connected') {
