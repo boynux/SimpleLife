@@ -1,5 +1,10 @@
 <div ng-show='user' class='container-fluid' ng-controller='AlbumsListCtrl'>
     <form name='main' ng-submit='submit()'>
+        <div class='row'>
+            <div class='col-md-12 form-group'>
+                <input type='text' name='albumName' class='form-control' ng-model='facebook.albumName' placeholder='Please choose a name for your album' />
+            </div>
+        </div>
     <div class="row albums">
         <div ng-repeat="album in albumsList" class='col-md-4 col-sm-6 col-xs-6 form-group button-group'>
             <fb-image label="{{album.name}}" reference="{{album.cover_photo}}">

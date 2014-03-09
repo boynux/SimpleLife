@@ -13,6 +13,7 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
     console.log ($scope.albums);
 
     $scope.facebook = facebookService;
+    $scope.facebook.albumName = '';
 
     $('#addNewAlbum').on ('shown.bs.modal', function (e) {
         checkFbPermissions ();
@@ -36,12 +37,13 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
     $scope.saveSelectedAlbums = function () {
         var selectedAlbums = [];
         var album = new Album ({
-            name: 'test2', 
+            name: $scope.facebook.albumName || 'default', 
             fb_albums: facebookService.getSelectedAlbums ()
         });
 
-        album.$save ();
-        $scope.albums = Album.query ();
+        album.$save ().then (function () {
+            $scope.albums = Album.query ();
+        });
 
         $('#addNewAlbum').modal ('hide');
  

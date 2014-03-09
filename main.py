@@ -82,6 +82,7 @@ class AlbumsHandler (FacebookHandler):
 
                 # album = user.add_album (info)
 
+            print data
             if data:
                 album = user.add_album (data)
                 taskqueue.add(url='/extractor', params = {'user': user.id, "album": album.key.id (), 'fb_albums': json.dumps (data["fb_albums"])})
