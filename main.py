@@ -2,6 +2,7 @@ import webapp2
 import jinja2
 import facebook
 import datetime
+
 from google.appengine.ext import ndb
 from webapp2_extras import sessions
 from google.appengine.api import taskqueue
@@ -12,6 +13,7 @@ import os
 from config import *
 from models.user import User
 from models.album import Album
+from models.image import Image
 
 from handlers import FacebookHandler, fb_require_token
 
@@ -101,9 +103,12 @@ class PictureExtractor (webapp2.RequestHandler):
         albums_count = len(fb_albums)
 
         for fb_album in fb_albums:
-            images_list = graph.get_object ("%s/photos" % fb_album["id"], fields="images")
+            images_list = graph.get_object ("%s/photos" % fb_album["id"],
+                    fields="picture")
+
             if images_list:
-                images.extend ([item["images"][0]["source"] for item in images_list["data"]])
+                images.extend ([Image (source=image["picture"], id=image["id"])
+                    for image in images_list["data"]])
 
         album.images = images
         album.put ()
@@ -114,13 +119,26 @@ class PicturesHandler (FacebookHandler):
 
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
+            if user:
 
-            albums = Album.query (ancestor = user.key).fetch ()
+                albums = Album.query (ancestor = user.key).fetch ()
 
-            for album in albums:
-                images.extend (album.images)
+                for album in albums:
+                    images.extend (album.images)
 
-        self.response.out.write (json.dumps (images))
+        self.response.out.write (json.dumps (images, cls=JsonAlbumEncode))
+
+class JsonAlbumEncode (json.JSONEncoder):
+    def default (self, obj):
+        if isinstance (obj, Image):
+            return {
+                "id": obj.id,
+                "source": obj.source,
+                "width": obj.width,
+                "height": obj.height
+            }
+        else:
+            return json.JSONEncoder.default (self, obj)
 
 class TokenHandler (FacebookHandler):
     def get (self):

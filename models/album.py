@@ -1,4 +1,5 @@
 from google.appengine.ext import ndb
+from models.image import Image
 
 class Album (ndb.Model):
     id = ndb.IntegerProperty ()
@@ -7,7 +8,7 @@ class Album (ndb.Model):
     count = ndb.IntegerProperty ()
     status = ndb.IntegerProperty ()
     progress = ndb.IntegerProperty ()
-    images = ndb.StringProperty (repeated = True)
+    images = ndb.StructuredProperty (Image, repeated = True)
     created_time = ndb.DateTimeProperty (auto_now_add = True)
     updated_time = ndb.DateTimeProperty (auto_now_add = True)
 

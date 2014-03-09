@@ -141,7 +141,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             });
         });
     }
-]).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', 
+] ).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', 
     function ($rootScope, $scope, $location, $http, RenewToken, $sce) {
         $http.get ('/pictures').success (function (info) {
             console.log (info);
@@ -166,10 +166,11 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             var items = [];
             var itemCount = 0;
 
-            angular.forEach ($scope.pictures, function (photo, index) {
-                pictures[index] = photo;
+            angular.forEach ($scope.pictures, function (photo, id) {
+                pictures[photo.id || id] = photo.source;
             });
 
+            console.log (pictures);
             collie.ImageManager.add(pictures);
 
             angular.forEach (pictures, function (link, id) {
@@ -194,7 +195,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
             var layoutSelectedIndex = -1;
 
-            collie.Timer.repeat(function(oEvent){
+            var control = collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
                 layoutFunctions[layoutSelectedIndex]();
             }, 5000);
@@ -359,9 +360,9 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             collie.Renderer.load(document.getElementById("container"));
             collie.Renderer.start();
 
-            $scope.$on('$destroy', function(){
-                while (itemAnimations.length)
-                    itemAnimations.pop().stop();
+            $scope.$on('$destroy', function() {
+                control.stop ();
+                layer.clear ();
             });
         }).error (function (reason) {
             !!reason && console.log (reason);
