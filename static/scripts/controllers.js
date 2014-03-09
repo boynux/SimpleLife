@@ -141,9 +141,9 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             });
         });
     }
-] ).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', 
-    function ($rootScope, $scope, $location, $http, RenewToken, $sce) {
-        $http.get ('/pictures').success (function (info) {
+] ).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', '$routeParams', 
+    function ($rootScope, $scope, $location, $http, RenewToken, $sce, $routeParams) {
+        $http.get ('/' + $routeParams.albumId + '/pictures').success (function (info) {
             console.log (info);
             $scope.pictures = info;
 
@@ -199,6 +199,7 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
                 layoutFunctions[layoutSelectedIndex]();
             }, 5000);
+
 
             itemCount = items.length;
 
@@ -362,6 +363,9 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
 
             $scope.$on('$destroy', function() {
                 control.stop ();
+                while (itemAnimations.length)
+                    itemAnimations.pop().stop();
+
                 layer.clear ();
             });
         }).error (function (reason) {

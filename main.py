@@ -49,7 +49,7 @@ class AlbumsHandler (FacebookHandler):
                 result = Album.query (albumId, ancestor = user.key).fetch ()
             else:
                 result = [
-                    {"id": album.id, "name": album.name} 
+                    {"id": album.key.id(), "name": album.name} 
                     for album in user.albums
                 ]
             """
@@ -114,17 +114,16 @@ class PictureExtractor (webapp2.RequestHandler):
         album.put ()
 
 class PicturesHandler (FacebookHandler):
-    def get (self):
+    def get (self, albumId):
         images = []
 
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
             if user:
 
-                albums = Album.query (ancestor = user.key).fetch ()
-
-                for album in albums:
-                    images.extend (album.images)
+                album = ndb.Key ('Album', long(albumId), parent = user.key)
+                print album
+                images = album.get ().images
 
         self.response.out.write (json.dumps (images, cls=JsonAlbumEncode))
 
@@ -180,7 +179,7 @@ application = webapp2.WSGIApplication ([
     ('/albums(/\d+)?', AlbumsHandler),
     ('/signout', LogoutHandler),
     ('/current_user', CurrentUserHandler),
-    ('/pictures', PicturesHandler),
+    ('/([^/]+)/pictures', PicturesHandler),
     ('/renew_token', TokenHandler),
     ('/extractor', PictureExtractor),
     # ('/([^/]+)/list', AlbumHandler),

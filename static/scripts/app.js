@@ -21,7 +21,7 @@ var simpleLifeApp = angular.module ('simpleLifeApp', [
                 templateUrl: 'partials/albums.html',
                 controller: 'AlbumsCtrl',
             }).
-            when ('/pictures', {
+            when ('/:albumId/pictures', {
                 templateUrl: 'partials/confirm.html',
                 controller: 'ConfirmCtrl',
             }).
