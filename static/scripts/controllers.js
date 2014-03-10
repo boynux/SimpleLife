@@ -153,8 +153,8 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             var itemAnimations = [];
 
             var clientSize = {
-                width : document.body.clientWidth - 300,
-                height : 2000
+                width : document.body.clientWidth,
+                height : document.body.clientHeight
             };
 
             var itemSize = 100;
@@ -162,6 +162,11 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             var layer = new collie.Layer({
                 width: clientSize.width,
                 height: clientSize.height
+            }).attach ({
+                mousemove: function (ev) {
+                    parameters.speed = Math.floor (10 * (ev.x / clientSize.width)) - 5;
+                    console.log (parameters);
+                }
             });
 
             var pictures = {};
@@ -183,9 +188,9 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                     height: itemSize,
                     // velocityRotate: 50,
                     backgroundImage: id,
-                    backgroundColor: '#FFFFFF'
+                    // backgroundColor: '#000000'
                 }).attach ({
-                    "click": function (ev) {
+                    click: function (ev) {
                         console.log (ev);  
                     }
                 }).addTo(layer);
@@ -195,15 +200,49 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
 
             // var layoutFunctions = [explodeImages];
             var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
+            var layoutFunctions = [scrollHorizontal];
             var layoutSelectedIndex = -1;
+
+            var parameters = {
+                speed: 6
+            };
 
             var control = collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
-                layoutFunctions[layoutSelectedIndex]();
-            }, 5000);
-
+                layoutFunctions[layoutSelectedIndex](parameters);
+            });
 
             itemCount = items.length;
+
+            function scrollHorizontal (params) {
+                var rows = 3;
+                var cols = Math.ceil (itemCount/rows);
+
+                var offsetX = - Math.round (cols / 2) * itemSize;
+                var offsetY = - Math.round (rows / 2) * itemSize;
+
+                var padding = 10;
+                var step = 2;
+
+                var speed = [];
+                arrangeItems (function (i) {
+                    speed[i] = (Math.random () * 10 % 5 + 5) / 10;
+
+                    return {
+                        x: offsetX + (i % cols) * itemSize + padding * (i % cols),
+                        y: offsetY + (i % rows) * itemSize + padding * (i % rows),
+
+                        originX: 'center',
+                        originY: 'center'
+                    }
+                }, function (frame, idx, item) {
+                    if (item.x > -itemSize) { 
+                        item.x -= speed[idx] * params.speed;
+                    } else {
+                        item.x = clientSize.width;
+                    }
+                })
+            }
 
             function explodeImages () {
                 var countX = Math.ceil(Math.sqrt(itemCount));
