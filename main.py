@@ -1,3 +1,4 @@
+import urllib2
 import webapp2
 import jinja2
 import facebook
@@ -35,7 +36,7 @@ class SignInPage (FacebookHandler):
         if self.current_user:
             response["success"] = True
             response["id"] = self.current_user["id"]
-
+          
         self.response.out.write (json.dumps (response));
 
 class AlbumsHandler (FacebookHandler):
@@ -104,12 +105,19 @@ class PictureExtractor (webapp2.RequestHandler):
         albums_count = len(fb_albums)
 
         for fb_album in fb_albums:
-            images_list = graph.get_object ("%s/photos" % fb_album["id"],
-                    fields="picture")
+            images_list = graph.get_object ("%s/photos" % fb_album["id"])
 
+            print images_list
             if images_list:
-                images.extend ([Image (source=image["picture"], id=image["id"])
-                    for image in images_list["data"]])
+                images.extend ([
+                    Image (
+                        id=image["id"],
+                        source=image["images"][0]["source"], 
+                        width=image["images"][0]["width"],
+                        height=image["images"][0]["height"]
+                    )
+                    for image in images_list["data"]
+                ])
 
         album.images = images
         album.put ()
@@ -143,10 +151,30 @@ class JsonAlbumEncode (json.JSONEncoder):
 class TokenHandler (FacebookHandler):
     def get (self):
         if 'code' in self.request.GET:
-            token = self.get_token_from_code (self.request.GET['code'], self.request.path_url)
+            try:
+                token = self.get_token_from_code (self.request.GET['code'], self.request.path_url)
+            except urllib2.HTTPError as e:
+                err = json.loads (e.read ())
+                if err["error"]["code"] == 100:
+                    self.redirect (str(self.session["redirect"]["redirect_url"]), abort = True)
+                else:
+                    raise e
 
-            print token, self.current_user
-            user = User.get_user_by_id (self.current_user['id'])
+            graph = facebook.GraphAPI (token["access_token"])
+            graph.extend_access_token (FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
+
+            user_info = graph.get_object ("me")
+            user_info["updated_time"] = \
+            datetime.datetime.strptime (
+                user_info["updated_time"][0:-5], 
+                "%Y-%m-%dT%H:%M:%S"
+            )
+            user_info["id"] = int(user_info["id"])
+            user = User.get_user_by_id (user_info["id"])
+
+            if not user:
+                raise Exception ("Sorry, Something realy went wrong and we can not recover!");
+
             user.access_token = token["access_token"]
             user.put ()
 

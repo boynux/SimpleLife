@@ -1,3 +1,4 @@
+import urllib2
 import webapp2
 import facebook
 import datetime
@@ -66,7 +67,7 @@ class FacebookHandler (webapp2.RequestHandler):
         cookie = None
 
         user = self.get_user_from_session ()
-        
+
         if not user:
             cookie = facebook.get_user_from_cookie (
                 self.request.cookies, 
@@ -101,6 +102,14 @@ class FacebookHandler (webapp2.RequestHandler):
                 self.add_user_to_session (user)
             else:
                 return None
+
+
+        if cookie and cookie["access_token"] != user["access_token"]:
+            user = User.get_user_by_id (user['id'])
+            user.access_token = cookie["access_token"]
+            user.put ()
+
+            self.add_user_to_session (user)
 
         return self.get_user_from_session ()
 
