@@ -219,6 +219,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
             console.debug('sl-album-show loaded', ngModel.$viewValue, element);
 
             console.log (element.width ());
+
             var itemSize = {
                 width: 100,
                 height: 100
@@ -226,8 +227,8 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
             var pictures = {};
             var picture_repository = {}
-            var maxHeight = clientSize.height;
-            var maxWidth = clientSize.width;
+            var avgHeight = clientSize.height;
+            var avgWidth = clientSize.width;
             var ratio = 1;
 
             var items = [];
@@ -242,16 +243,17 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     'height': photo.height
                 };
 
-                maxHeight = Math.max (photo.height, maxHeight)
-                maxWidth = Math.max (photo.width, maxWidth)
+                avgHeight = (photo.height + avgHeight) / 2;
+                avgWidth = (photo.width + avgWidth) / 2;
             });
 
-            ratio = clientSize.height / maxHeight;
+            ratio = Math.min (clientSize.height / avgHeight) / Math.max(clientSize.height / avgHeight);
 
-            itemSize.height = maxHeight * ratio / 3;
-            itemSize.width = maxWidth * ratio;
+            itemSize.height = avgHeight * ratio;
+            itemSize.width = avgWidth * ratio;
 
             console.debug (ratio, itemSize, clientSize);
+
             var layer = new collie.Layer({
                 width: clientSize.width,
                 height: clientSize.height
@@ -264,15 +266,33 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 var item = new collie.DisplayObject({
                     x: clientSize.width / 2,
                     y: clientSize.height / 2,
-                    width: picture_repository[id].width * ratio,
-                    height: picture_repository[id].height *ratio,
+                    width: picture_repository[id].width,
+                    height: picture_repository[id].height,
+                    scaleX: ratio,
+                    scaleY: ratio,
+                    originX: 'left',
+                    originY: 'top',
                     // velocityRotate: 50,
                     backgroundImage: id,
                     // backgroundColor: '#000000'
                 }).attach ({
+                    /*
                     click: function (ev) {
-                        console.log (ev);  
+                        if (control.isPlaying ()) {
+                            console.log (ev);  
+                            control.pause ();
+                            angular.forEach (itemAnimations, function (item) {
+                                item.pause ();
+                            });
+                        } else {
+                            control.start ();
+                            angular.forEach (itemAnimations, function (item) {
+                                item.start ();
+                            });
+
+                        }
                     }
+                    */
                 }).addTo(layer);
 
                 items.push(item);
@@ -292,32 +312,44 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
             function scrollHorizontal (params) {
                 var rows = 3;
-                var cols = Math.ceil (itemCount/rows);
+                var cols = Math.ceil (itemCount / rows);
 
-                var offsetX = - Math.round (cols / 2) * itemSize.width;
-                var offsetY = - Math.round (rows / 2) * itemSize.height;
+                var offsetX = - clientSize.width / 2;
+                var offsetY = - clientSize.height / 2;
 
                 var padding = 10;
 
                 var speed = [];
-                arrangeItems (function (i) {
-                    speed[i] = (Math.random () * 10 % 5 + 5) / 10;
+                console.log (items[0], itemCount);
+
+                arrangeItems (function (i, item) {
+                    var width = clientSize.width / cols;
+                    var height = clientSize.height / rows;
+
+                    speed[i] = (Math.random () * 100 % 10 + 5) / 5;
 
                     return {
-                        x: offsetX + (i % cols) * itemSize.width + padding * (i % cols),
-                         y: offsetY + (i % rows) * itemSize.height + padding * (i % rows),
+                        x: offsetX + (Math.floor(i / rows) % cols) * width + padding * (Math.floor(i / rows) % cols),
+                        y: offsetY + (i % rows) * (clientSize.height / rows),
 
-                         originX: 'center',
-                         originY: 'center'
+                        scaleX: item.get ('scaleX') / rows,
+                        scaleY: item.get ('scaleY') / rows,
+
+                        zIndex: speed[i] * 10,
+                        originX: 'left',
+                        originY: 'top'
                     }
-                }, function (frame, idx, item) {
-                    if (item.x >= -itemSize.width && item.x <= clientSize.width) { 
-                        item.x -= speed[idx] * params.currentSpeed;
-                    } else if (item.x > clientSize.width) {
-                        item.x = -itemSize.width;
-                    } else {
-                        item.x = clientSize.width;
-                    }
+                }, function (frame, i, to, item) {
+                    var width = item.get("width") * item.get("scaleX");
+                    
+                    
+                    if (to.x > clientSize.width) {
+                        to.x = -width;
+                    } else if (to.x < -width) {
+                        to.x = clientSize.width;
+                    } else{
+                        to.x -= speed[i] * params.currentSpeed;
+                    } 
                 })
             }
 
@@ -432,7 +464,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 for (var i = 0; i < itemCount; i++){
                     var item = items[i];
                     from = item.get();
-                    to = getTransitionInfo(i);
+                    to = getTransitionInfo(i, item);
                     aFrom = [];
                     aTo = [];
                     set = [];
@@ -456,7 +488,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     var repeat = (function(i, to, item) {
                         var params = {i:i, to:to, item:item};
                         return function (animationParams) {
-                            updateRepeatInfo(animationParams.frame, params.i, params.to);
+                            updateRepeatInfo(animationParams.frame, params.i, params.to, params.item);
                             params.item.set(params.to);
                         }
                     }) (i, to, item);
