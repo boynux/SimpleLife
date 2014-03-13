@@ -211,8 +211,8 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         var itemAnimations = [];
 
         element.on ('mousemove',  function (event) {
-            parameters.currentSpeed = Math.ceil (parameters.speed * (event.offsetX / clientSize.width - 0.5));
-            console.log (parameters);
+            parameters.currentSpeed = 
+                Math.ceil (parameters.speed * (event.offsetX || event.originalEvent.layerX / clientSize.width - 0.5));
         });
 
         ngModel.$render = function () {
@@ -341,7 +341,6 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     }
                 }, function (frame, i, to, item) {
                     var width = item.get("width") * item.get("scaleX");
-                    
                     
                     if (to.x > clientSize.width) {
                         to.x = -width;
