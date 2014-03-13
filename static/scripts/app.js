@@ -212,7 +212,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
         element.on ('mousemove',  function (event) {
             parameters.currentSpeed = 
-                Math.ceil (parameters.speed * (event.offsetX || event.originalEvent.layerX / clientSize.width - 0.5));
+                Math.ceil (parameters.speed * ( (event.offsetX ? event.offsetX : event.originalEvent.layerX) / clientSize.width - 0.5));
         });
 
         ngModel.$render = function () {
