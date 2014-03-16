@@ -216,6 +216,8 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
             parameters.currentSpeed = 
                 Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
 
+            console.debug (parameters);
+
             if (parameters.selectedItem) {
                 parameters.selectedItem.set ({
                     x: event.pageX - offset.left,
@@ -225,12 +227,6 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
             event.stopPropagation(); 
             event.preventDefault();
-        });
-
-        element.bind ('touchstart', function (event) {
-            parameters.currentSpeed = 
-                Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
-
         });
 
         ngModel.$render = function () {
