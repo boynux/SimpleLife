@@ -210,7 +210,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         var itemColors = ['#74ff00', '#88ff00', '#9dff00', '#b2ff00', '#c7ff00', '#b2ff00', '#9dff00', '#88ff00'];
         var itemAnimations = [];
 
-        element.bind ('mousemove',  function (event) {
+        element.bind ('mousemove touchmove',  function (event) {
             var offset = $(this).offset ();
 
             parameters.currentSpeed = 
