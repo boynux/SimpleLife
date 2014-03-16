@@ -197,8 +197,8 @@ simpleLifeApp.factory ('Album', function ($resource) {
 simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
     function link (scope, element, attrs, ngModel) {
         var parameters = {
-            speed: 10,
-            currentSpeed: 6
+            speed: 6,
+            currentSpeed: 4
         };
 
         var clientSize = {
@@ -211,13 +211,25 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         var itemAnimations = [];
 
         element.on ('mousemove',  function (event) {
+            var offset = $(this).offset ();
+
+            if (parameters.selectedItem) {
+                parameters.selectedItem.set ({
+                    x: event.pageX - offset.left,
+                    y: event.pageY - offset.top
+                });
+            }
+
             parameters.currentSpeed = 
-                Math.ceil (parameters.speed * ( (event.offsetX ? event.offsetX : event.originalEvent.layerX) / clientSize.width - 0.5));
+                Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
         });
 
         ngModel.$render = function () {
-            console.debug('sl-album-show loaded', ngModel.$viewValue, element);
 
+            if (!ngModel.$viewValue)
+                return;
+
+            console.debug('sl-album-show loaded', ngModel.$viewValue, element);
             console.log (element.width ());
 
             var itemSize = {
@@ -264,6 +276,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
             angular.forEach (pictures, function (link, id) {
                 var item = new collie.DisplayObject({
+                    name: id,
                     x: clientSize.width / 2,
                     y: clientSize.height / 2,
                     width: picture_repository[id].width,
@@ -274,8 +287,25 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     originY: 'top',
                     // velocityRotate: 50,
                     backgroundImage: id,
+                    fitImage: true
                     // backgroundColor: '#000000'
                 }).attach ({
+                    mousedown: function (event) {
+                        parameters.selectedItem = event.displayObject;
+                        console.debug (event, parameters.selectedItem);
+                    },
+                    mouseup: function (event) {
+                        console.debug ('mouseup')
+
+                        parameters.selectedItem = null;
+                    },
+                    mousemove: function (event) {
+                        if (parameters.selectedItem) {
+                            parameters.selectedItem.x = event.x;
+                            parameters.selectedItem.y = event.y;
+                        }
+                        console.debug (event);
+                    }
                     /*
                     click: function (ev) {
                         if (control.isPlaying ()) {
@@ -299,89 +329,59 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
             });
 
             // var layoutFunctions = [explodeImages];
-            var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
+            // var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
             var layoutFunctions = [scrollHorizontal];
             var layoutSelectedIndex = -1;
 
+            $.extend (parameters, {
+                picture_repository: picture_repository,
+                items: items,
+                itemsCount: items.length,
+                clientSize: clientSize,
+                scale: ratio,
+                rows: 3,
+            });
+                
             var control = collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
-                layoutFunctions[layoutSelectedIndex](parameters);
-            });
+                arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](parameters));
+            }, 5000);
 
             itemCount = items.length;
 
-            function scrollHorizontal (params) {
-                var rows = 3;
-                var cols = Math.ceil (itemCount / rows);
+            function explodeImages (params) {
+                var countX = Math.ceil (Math.sqrt(params.itemsCount));
+                var countY = Math.ceil (params.itemsCount / countX);
 
-                var offsetX = - clientSize.width / 2;
-                var offsetY = - clientSize.height / 2;
+                var offsetX = - params.clientSize.width / 2;
+                var offsetY = - params.clientSize.height / 2;
 
-                var padding = 10;
+                var fill = {
+                    x: params.clientSize.width / countX,
+                    y: params.clientSize.height / countY
+                };
 
-                var speed = [];
-                console.log (items[0], itemCount);
-
-                arrangeItems (function (i, item) {
-                    var width = clientSize.width / cols;
-                    var height = clientSize.height / rows;
-
-                    speed[i] = (Math.random () * 100 % 10 + 5) / 5;
-
-                    return {
-                        x: offsetX + (Math.floor(i / rows) % cols) * width + padding * (Math.floor(i / rows) % cols),
-                        y: offsetY + (i % rows) * (clientSize.height / rows),
-
-                        scaleX: item.get ('scaleX') / rows,
-                        scaleY: item.get ('scaleY') / rows,
-
-                        zIndex: speed[i] * 10,
-                        originX: 'left',
-                        originY: 'top'
-                    }
-                }, function (frame, i, to, item) {
-                    var width = item.get("width") * item.get("scaleX");
-                    
-                    if (to.x > clientSize.width) {
-                        to.x = -width;
-                    } else if (to.x < -width) {
-                        to.x = clientSize.width;
-                    } else{
-                        to.x -= speed[i] * params.currentSpeed;
-                    } 
-                })
-            }
-
-            function explodeImages () {
-                var countX = Math.ceil(Math.sqrt(itemCount));
-                var countY = Math.ceil(itemCount/countX);
-                // var offsetX = - (countX/2)*itemSize;
-                // var offsetY = - (countY/2)*itemSize;
-                var offsetX = - clientSize.width / 2;
-                var offsetY = - clientSize.height / 2;
-
-                arrangeItems(function(i) {
+                return [function(i, item) {
                     var fill = {
-                        x: clientSize.width / countX,
-                    y: clientSize.height / countY
+                        x: params.clientSize.width / countX,
+                        y: params.clientSize.height / countY
                     };
 
-                    return {
-                        x: offsetX + (i % countX) * fill.x + (fill.x - itemSize * Math.random ()),
-                    y: offsetY + parseInt (i / countX) * fill.y + (fill.y - itemSize * Math.random ()),
-                    width: itemSize,
-                    height: itemSize,
-                    // angle: 90 * Math.random (),
-                    originX: "top",
-                    originY: "left"
-                    }
-                }, function(frame, idx, info){
-                    if (info.width > 0.4){
-                        // info.width -= 0.4;
-                        // info.height -= 0.4;
-                    }
-                });
+                    var itemProperties = params.picture_repository[item.get ('name')];
 
+                    return {
+                        // x: -item.get('width') / 2, 
+                        // y: -item.get('height') / 2,
+                        x: offsetX + (i % countX) * fill.x + Math.floor ((fill.x - item.get('width')) / 2),
+                        y: offsetY + (Math.floor (i / countX) % countY) * fill.y, // + Math.floor ((fill.y - item.get ('height')) / 2),
+
+                        width: Math.floor (itemProperties.width * params.scale / countX),
+                        height: Math.floor (itemProperties.height * params.scale / countX)
+                    }
+                }, function(frame, i, to, item) {
+                    // to.x = offsetX + (i % countX) * fill.x + Math.floor ((fill.x - item.get('width')) / 2); // Math.random ());
+                    // to.y = offsetY + (Math.floor (i / countX) % countY) * fill.y; //  + Math.floor (fill.y - item.get ('height')) / 2; // * Math.random ()),
+                }];
             }
 
             function layoutHorizontal(){
@@ -391,12 +391,12 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 arrangeItems(function(i){
                     return {
                         x: offsetX + i*itemSize,
-                    y: offsetY,
-                    width: itemSize,
-                    height: itemSize,
-                    angle: 0,
-                    originX: "center",
-                    originY: "center"
+                        y: offsetY,
+                        width: itemSize,
+                        height: itemSize,
+                        angle: 0,
+                        originX: "center",
+                        originY: "center"
                     }
                 }, function(frame, idx, info){
                     if (info.width > 0.4){
@@ -438,12 +438,12 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
                     return {
                         x: radius * Math.cos(rad),
-                    y: radius * Math.sin(rad),
-                    width: itemSize,
-                    height: itemSize,
-                    angle: deg,
-                    originX: "left",
-                    originY: "top"
+                        y: radius * Math.sin(rad),
+                        width: itemSize,
+                        height: itemSize,
+                        angle: deg,
+                        originX: "left",
+                        originY: "top"
                     }
                 }, function(frame, idx, info){
                     info.angle++;
@@ -455,6 +455,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 var centerY = clientSize.height / 2;
                 var from, to;
                 var aFrom, aTo, set, effects;
+                var scaleFrom, scaleTo;
                 var item;
 
                 while (itemAnimations.length)
@@ -462,12 +463,16 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
 
                 for (var i = 0; i < itemCount; i++){
                     var item = items[i];
+
                     from = item.get();
                     to = getTransitionInfo(i, item);
                     aFrom = [];
                     aTo = [];
                     set = [];
                     effects = [];
+
+                    scaleFrom = [];
+                    scaleTo = [];
 
                     if (typeof to.x != 'undefined') to.x += centerX;
                     if (typeof to.y != 'undefined') to.y += centerY;
@@ -485,24 +490,35 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     }
 
                     var repeat = (function(i, to, item) {
-                        var params = {i:i, to:to, item:item};
+
+                        var _params = {i:i, to:to, item:item};
                         return function (animationParams) {
-                            updateRepeatInfo(animationParams.frame, params.i, params.to, params.item);
-                            params.item.set(params.to);
+                        if (item != parameters.selectedItem) {
+                                updateRepeatInfo(animationParams.frame, _params.i, _params.to, _params.item);
+                                _params.item.set(_params.to);
+                            }
                         }
                     }) (i, to, item);
 
                     itemAnimations.push(
-                            collie.Timer.queue().
-                            delay(function(){}, i * 8).
-                            transition(item, 600, {
-                                from:aFrom,
-                                to:aTo,
-                                set:set,
-                                effect: effects
-                            }).
-                            repeat(repeat, 5)
-                            );
+                        collie.Timer.queue().
+                        delay(function(){}, i * 8).
+                        /*
+                        transition (item, 600, {
+                            from: [scaleFrom, scaleFrom],
+                            to: [scaleTo, scaleTo],
+                            set: ['scaleX', 'scaleY']
+                        }).
+                        */
+                        transition(item, 600, {
+                            from:aFrom,
+                            to:aTo,
+                            set:set,
+                            effect: effects
+                        }).
+                        repeat(repeat, 5)
+                    );
+
                 }
             }
 
