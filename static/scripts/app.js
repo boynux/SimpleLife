@@ -213,9 +213,14 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         element.bind ('mousemove touchmove',  function (event) {
             var offset = $(this).offset ();
 
-            parameters.currentSpeed = 
-                Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
-
+            var _event = window.event;
+            if (_event.touches) {
+                parameters.currentSpeed = 
+                    Math.ceil (parameters.speed * ((_event.touches[0].pageX - offset.left) / clientSize.width - 0.5));
+            } else {
+                parameters.currentSpeed = 
+                    Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
+            }
             console.debug (event, offset, parameters);
 
             if (parameters.selectedItem) {
