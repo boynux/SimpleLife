@@ -210,8 +210,11 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         var itemColors = ['#74ff00', '#88ff00', '#9dff00', '#b2ff00', '#c7ff00', '#b2ff00', '#9dff00', '#88ff00'];
         var itemAnimations = [];
 
-        element.on ('mousemove',  function (event) {
+        element.bind ('mousemove',  function (event) {
             var offset = $(this).offset ();
+
+            parameters.currentSpeed = 
+                Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
 
             if (parameters.selectedItem) {
                 parameters.selectedItem.set ({
@@ -220,8 +223,14 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 });
             }
 
+            event.stopPropagation(); 
+            event.preventDefault();
+        });
+
+        element.bind ('touchstart', function (event) {
             parameters.currentSpeed = 
                 Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
+
         });
 
         ngModel.$render = function () {
