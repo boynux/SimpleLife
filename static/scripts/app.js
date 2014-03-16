@@ -216,7 +216,7 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
             parameters.currentSpeed = 
                 Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
 
-            console.debug (parameters);
+            console.debug (event, offset, parameters);
 
             if (parameters.selectedItem) {
                 parameters.selectedItem.set ({
