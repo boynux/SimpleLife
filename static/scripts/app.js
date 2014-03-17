@@ -194,11 +194,120 @@ simpleLifeApp.factory ('Album', function ($resource) {
     return $resource ('albums/:id', {albumId: '@id'});
 });
 
-simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
+simpleLifeApp.service ('animationService', function (facebook, $rootScope, $q) {
+    var parameters = {
+        clientSize: {
+            width: document.body.clientHeight,
+            height: document.body.clientWidth
+        },
+
+        animation: {
+            maxSpeed: 6,
+            currentSpeed: 4  
+        },
+
+        images: {
+            count: 0,
+            averageWidth: 0,
+            averageHeight: 0,
+        }
+    }
+    
+    var layer;
+    var inventory = {
+        images: {},
+    };
+
+    function clear ()
+    {
+        collie.ImageManager.reset ();
+
+        parameters.images.count = 0;
+        inventory.images = {};
+    }
+
+    function init (params) {
+        $.extend (parameters, params);
+
+        layer = new collie.Layer({
+            width: parameters.clientSize.width,
+            height: parameters.clientSize.height
+        });
+    }
+
+    function getImage (id) {
+        return inventory.images[id];
+    }
+
+    function addImages (images) {
+        var items = {};
+
+        angular.forEach (images, function (item, id) {
+            if (!collie.ImageManager.getImage (item.id || id)) {
+                items[item.id || id] = item.source;      
+                updateImageInfo (item.id || id, item);
+            }
+        });
+
+        collie.ImageManager.add(items);
+    }
+
+    function updateImageInfo (id, image)
+    {
+        inventory.images[image.id || id] = image;
+
+        parameters.images.count ++;
+
+        parameters.images.averageHeight = 
+            (parameters.images.averageHeight + image.height) / 2;
+        parameters.images.averageWidth = 
+            (parameters.images.averageWidth + image.width) / 2;
+    }
+
+    function drawImage (id, config) {
+        var properties = {
+            name: id,
+            originX: 'left',
+            originY: 'top',
+            
+            backgroundImage: id,
+            fitImage: true
+        };
+
+        if (config) {
+            $.extend (properties, config);
+        }
+
+        var image = new collie.DisplayObject(properties).addTo (layer);
+
+        return image;
+    }
+
+    return {
+        init: init,
+        addImages: addImages,
+        getImage: getImage,
+        getImagesInfo: function () {return parameters.images;},
+        getParameters: function () {return parameters;},
+
+        setAnimationSpeed: function (speed) { parameters.animation.currentSpeed = speed; },
+        
+        drawImage: drawImage,
+
+        getLayer: function () { return layer; }
+    }
+});
+
+simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationService) {
     function link (scope, element, attrs, ngModel) {
+        animationService.init ({
+            clientSize: {
+                width : element.offsetParent ().width (),
+                height : document.body.clientHeight - 100
+            }
+        });
+
         var parameters = {
-            speed: 6,
-            currentSpeed: 4
         };
 
         var clientSize = {
@@ -207,25 +316,33 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
         };
 
         console.debug (clientSize);
+
         var itemColors = ['#74ff00', '#88ff00', '#9dff00', '#b2ff00', '#c7ff00', '#b2ff00', '#9dff00', '#88ff00'];
         var itemAnimations = [];
 
         element.bind ('mousemove touchmove',  function (event) {
+            var parameters = animationService.getParameters ();
             var offset = $(this).offset ();
 
+            var mousePosition = {
+                x: event.pageX - offset.left,
+                y: event.pageY - offset.top
+            };
+
             if (event.type == 'touchmove') {
-                parameters.currentSpeed = 
-                    Math.ceil (parameters.speed * ((event.originalEvent.touches[0].pageX - offset.left) / clientSize.width - 0.5));
-            } else {
-                parameters.currentSpeed = 
-                    Math.ceil (parameters.speed * ((event.pageX - offset.left) / clientSize.width - 0.5));
+                mousePosition.x = event.originalEvent.touches[0].pageX - offset.left;
+                mousePosition.y = event.originalEvent.touches[0].pageX - offset.top;
             }
 
+            animationService.setAnimationSpeed (
+                Math.ceil (
+                    parameters.animation.maxSpeed * 
+                    (mousePosition.x / parameters.clientSize.width - 0.5)
+                )
+            );
+
             if (parameters.selectedItem) {
-                parameters.selectedItem.set ({
-                    x: event.pageX - offset.left,
-                    y: event.pageY - offset.top
-                });
+                parameters.selectedItem.set (mousePosition);
             }
 
             event.stopPropagation(); 
@@ -254,6 +371,8 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
             var items = [];
             var itemCount = 0;
 
+            animationService.addImages (ngModel.$modelValue);
+
             angular.forEach (ngModel.$modelValue, function (photo, id) {
                 console.debug (photo);
                 pictures[photo.id || id] = photo.source;
@@ -262,41 +381,17 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                     'width': photo.width,
                     'height': photo.height
                 };
-
-                avgHeight = (photo.height + avgHeight) / 2;
-                avgWidth = (photo.width + avgWidth) / 2;
             });
 
-            ratio = Math.min (clientSize.height / avgHeight) / Math.max(clientSize.height / avgHeight);
+            var imagesInfo = animationService.getImagesInfo ();
+            ratio = 1;
 
-            itemSize.height = avgHeight * ratio;
-            itemSize.width = avgWidth * ratio;
-
-            console.debug (ratio, itemSize, clientSize);
-
-            var layer = new collie.Layer({
-                width: clientSize.width,
-                height: clientSize.height
-            })
-
-            console.log (pictures);
-            collie.ImageManager.add(pictures);
+            var layer = animationService.getLayer ();
 
             angular.forEach (pictures, function (link, id) {
-                var item = new collie.DisplayObject({
-                    name: id,
+                var item = animationService.drawImage (id, {
                     x: clientSize.width / 2,
                     y: clientSize.height / 2,
-                    width: picture_repository[id].width,
-                    height: picture_repository[id].height,
-                    scaleX: ratio,
-                    scaleY: ratio,
-                    originX: 'left',
-                    originY: 'top',
-                    // velocityRotate: 50,
-                    backgroundImage: id,
-                    fitImage: true
-                    // backgroundColor: '#000000'
                 }).attach ({
                     mousedown: function (event) {
                         parameters.selectedItem = event.displayObject;
@@ -314,30 +409,11 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                         }
                         console.debug (event);
                     }
-                    /*
-                    click: function (ev) {
-                        if (control.isPlaying ()) {
-                            console.log (ev);  
-                            control.pause ();
-                            angular.forEach (itemAnimations, function (item) {
-                                item.pause ();
-                            });
-                        } else {
-                            control.start ();
-                            angular.forEach (itemAnimations, function (item) {
-                                item.start ();
-                            });
-
-                        }
-                    }
-                    */
-                }).addTo(layer);
+                });
 
                 items.push(item);
             });
 
-            // var layoutFunctions = [explodeImages];
-            // var layoutFunctions = [layoutHorizontal, layoutRectangle, layoutCircle];
             var layoutFunctions = [scrollHorizontal];
             var layoutSelectedIndex = -1;
 
@@ -352,8 +428,8 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook) {
                 
             var control = collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
-                arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](parameters));
-            }, 5000);
+                arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](animationService));
+            });
 
             itemCount = items.length;
 
