@@ -229,6 +229,8 @@ simpleLifeApp.service ('animationService', function (facebook, $rootScope, $q) {
     function init (params) {
         $.extend (parameters, params);
 
+        clear ();
+
         layer = new collie.Layer({
             width: parameters.clientSize.width,
             height: parameters.clientSize.height
