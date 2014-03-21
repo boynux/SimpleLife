@@ -325,11 +325,12 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationServ
         element.bind ('mousemove touchmove',  function (event) {
             var parameters = animationService.getParameters ();
             var offset = $(this).offset ();
-
             var mousePosition = {
                 x: event.pageX - offset.left,
                 y: event.pageY - offset.top
             };
+
+            parameters.mouseMove = true;
 
             if (event.type == 'touchmove') {
                 mousePosition.x = event.originalEvent.touches[0].pageX - offset.left;
@@ -343,9 +344,12 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationServ
                 )
             );
 
+            /*
             if (parameters.selectedItem) {
-                parameters.selectedItem.set (mousePosition);
+                parameters.selectedItem.move (mousePosition.x, mousePosition.y);
+                parameters.selectedItem.set ('zIndex', 1000);
             }
+            */
 
             event.stopPropagation(); 
             event.preventDefault();
@@ -386,8 +390,6 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationServ
             });
 
             var imagesInfo = animationService.getImagesInfo ();
-            ratio = 1;
-
             var layer = animationService.getLayer ();
 
             angular.forEach (pictures, function (link, id) {
@@ -396,20 +398,65 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationServ
                     y: clientSize.height / 2,
                 }).attach ({
                     mousedown: function (event) {
-                        parameters.selectedItem = event.displayObject;
-                        console.debug (event, parameters.selectedItem);
-                    },
-                    mouseup: function (event) {
-                        console.debug ('mouseup')
-
-                        parameters.selectedItem = null;
-                    },
-                    mousemove: function (event) {
+                        var parameters = animationService.getParameters ();
+                        
                         if (parameters.selectedItem) {
-                            parameters.selectedItem.x = event.x;
-                            parameters.selectedItem.y = event.y;
+                            parameters.selectedItem = null;
+                        } else {
+                            parameters.selectedItem = event.displayObject;
                         }
-                        console.debug (event);
+
+                        parameters.mouseMove = false;
+                    },
+
+                    mouseup: function (event) {
+                        var parameters = animationService.getParameters ();
+
+                        if (!parameters.mouseMove) {
+                            var imageInfo = animationService.getImage (parameters.selectedItem.get ('name'));
+
+                            var to = [
+                                imageInfo.width,
+                                imageInfo.height,
+                                (parameters.clientSize.width - imageInfo.width) / 2,
+                                (parameters.clientSize.height  - imageInfo.height) / 2,
+                                1000
+                            ];
+
+                            var set = [
+                                'width', 
+                                'height', 
+                                'x', 
+                                'y', 
+                                'zIndex'
+                            ];
+
+                            var effects = [
+                                collie.Effect.easeOutSine,
+                                collie.Effect.easeOutSine,
+                                collie.Effect.easeOutSine,
+                                collie.Effect.easeOutSine,
+                                collie.Effect.easeOutSine,
+                            ];
+
+                            collie.Timer.queue().
+                            transition(item, 600, {
+                                to:to,
+                                set:set,
+                                effect: effects
+                            });
+
+                            /*
+                            parameters.selectedItem.set ('width', imageInfo.width);
+                            parameters.selectedItem.set ('height', imageInfo.height);
+                            parameters.selectedItem.set ('x', 'center');
+                            parameters.selectedItem.set ('y', 'center');
+                            parameters.selectedItem.set ('zIndex', 1000);
+                            */
+                        } else {
+                            parameters.selectedItem = null;
+                        }
+
                     }
                 });
 
@@ -576,10 +623,10 @@ simpleLifeApp.directive('slAlbumShow', function ($parse, facebook, animationServ
                     }
 
                     var repeat = (function(i, to, item) {
-
+                        var parameters = animationService.getParameters ();
                         var _params = {i:i, to:to, item:item};
                         return function (animationParams) {
-                        if (item != parameters.selectedItem) {
+                            if (item != parameters.selectedItem) {
                                 updateRepeatInfo(animationParams.frame, _params.i, _params.to, _params.item);
                                 _params.item.set(_params.to);
                             }

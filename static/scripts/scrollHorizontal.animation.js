@@ -14,11 +14,17 @@ function scrollHorizontal (animationService) {
 
     var speed = [];
 
-    var width = parameters.clientSize.width / cols;
+    var virtualWidth = Math.max (
+        parameters.images.averageWidth * cols / rows, 
+        parameters.clientSize.width
+    );
+
+    var width = virtualWidth / cols;
     var height = parameters.clientSize.height / rows;
 
-    return [function (i, item) {
+    console.debug (virtualWidth, parameters.clientSize.width);
 
+    return [function (i, item) {
         var itemHeight = 0;
         var itemWidth = 0;
 
@@ -50,10 +56,10 @@ function scrollHorizontal (animationService) {
 
         to.x -= speed[i] * parameters.animation.currentSpeed;
 
-        if (to.x > parameters.clientSize.width) {
+        if (to.x > virtualWidth) {
             to.x = -width;
         } else if (to.x < -width) {
-            to.x = parameters.clientSize.width;
+            to.x = virtualWidth;
         }
     }];
 }
