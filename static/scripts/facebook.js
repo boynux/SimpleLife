@@ -1,4 +1,5 @@
-angular.module ('facebook', []).provider ('facebook', function facebookProvider ($injector) {
+var module = angular.module ('facebook', [])
+.provider ('facebook', function facebookProvider ($injector) {
     var initialized = false;
     var defaultParams = { appId: '245215608990152', status: true, cookie: true, xfbml: true };
     var facebookEvents = {
@@ -36,7 +37,6 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
     var processQ = function () {
         console.log ('Processing Q messages.');
         while (item = Q.shift ()) {
-            console.log (item);
 
             func = item[0];
             self = item[1];
@@ -105,4 +105,118 @@ angular.module ('facebook', []).provider ('facebook', function facebookProvider 
         }
     }];
 });
+
+module.service ('facebookService', function (facebook, $rootScope, $q) {
+    var albums = [];
+    var selectedAlbums = [];
+    var selectedPhotos = [];
+    var connected = false;
+
+    var promiseWhenConnectedApi = function (callback) {
+        if (facebook.connected) {
+            var promise = callback ();
+        } else {
+            var defer = $q.defer ();
+
+            $rootScope.$watch ('fb.auth.authResponseChange', function (event, response) {
+                if (response.status === 'connected') {
+                    defer.resolve (callback ());
+                }
+            });
+
+            var promise = defer.promise;
+        }
+
+        return promise;
+    }
+
+    $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
+        $rootScope.$apply (function () {
+            facebook.connected = (response.status == 'connected');
+
+            if (response.status == 'connected') {
+                facebook.api ('me').then (function (result) {
+                    $rootScope.user = result;
+                });
+            } else {
+                $rootScope.user = null;
+            }
+        });
+    });
+
+    return {
+        login: function (params) {
+            return facebook.login (params);
+        },
+
+        getAlbums: function () {
+            var promise =
+                promiseWhenConnectedApi (function () {
+                    return facebook.api ('me/albums');
+                });
+
+            return promise;
+        },
+        
+        getAlbumPhotos: function (album_id) {
+            return promiseWhenConnectedApi (function () {
+                return facebook.api ('me/' + album_id + '/photos?fields=picture')
+            });
+
+            if (facebook.connected) {
+                var promise = facebook.api ('me/album_id/photos').then (function (result) {
+                });
+            } else {
+                $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
+                    if (response.status === 'connected') {
+                        var promise = facebook.api ('me/albums').then (function (result) {
+                        });
+                    }
+                });
+            }
+
+            return promise;
+        },
+
+        selectedAlbum: function (album, selected) {
+            if (selected) {
+                if (selectedAlbums.indexOf (album) < 0)
+                    selectedAlbums.push (album);
+            } else {
+                var index = selectedAlbums.indexOf (album);
+
+                if (index > -1) {
+                    selectedAlbums.splice (index, 1)
+                }
+            }
+        },
+        
+        getSelectedAlbums: function () {
+            return selectedAlbums;
+        },
+
+        albums: function () {
+            return albums;
+        }
+    };
+});
+
+module.directive('facebookImage', function ($parse, facebook) {
+    function link (scope, element, attrs) {
+        scope.label = attrs.label;
+        scope.model = attrs
+
+        facebook.api (attrs.reference).then (function (result) {
+            scope.info = result;
+        });
+    }
+
+    return {
+        transclude: true,
+        restrict:'E',
+        templateUrl: 'partials/album-select.html',
+        link: link
+    }
+});
+
 

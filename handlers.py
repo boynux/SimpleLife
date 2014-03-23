@@ -104,8 +104,8 @@ class FacebookHandler (webapp2.RequestHandler):
                 return None
 
 
-        if cookie and cookie["access_token"] != user["access_token"]:
-            user = User.get_user_by_id (user['id'])
+        if cookie and cookie["access_token"] != user.access_token:
+            user = User.get_user_by_id (user.id)
             user.access_token = cookie["access_token"]
             user.put ()
 

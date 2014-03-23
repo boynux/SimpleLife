@@ -7,10 +7,10 @@
         </div>
     <div class="row albums">
         <div ng-repeat="album in albumsList" class='col-md-4 col-sm-6 col-xs-6 form-group button-group'>
-            <fb-image label="{{album.name}}" reference="{{album.cover_photo}}">
+            <facebook-image label="{{album.name}}" reference="{{album.cover_photo}}">
                 <span ng-show="false">{{facebook.selectedAlbum(album, selected)}}</span>
                 <span>{{album.name}}</span>
-            </fb-image>
+            </facebook-image>
         </div>
     </div>
     </form>

@@ -1,13 +1,13 @@
-<div ng-if="user">
+<div ng-show="user">
     <h1 class="cover-heading">
-        <a href="http://graph.facebook.com/{{ user.id }}">
-            <img src="http://graph.facebook.com/{{ user.id }}/picture?type=square"/>
+        <a href="http://graph.facebook.com/{{user.id}}">
+            <img src="http://graph.facebook.com/{{user.id}}/picture?type=square"/>
         </a> <span id='name'></span>
         Hello, {{ user.name }}
     </h1>
 </div>
 
-<div ng-if="user">
+<div ng-show="user">
     <p class="lead">
         Upload photo test: 
         <form method="post">
