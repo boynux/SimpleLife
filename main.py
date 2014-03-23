@@ -1,4 +1,6 @@
 import urllib2
+import cStringIO
+import Image as imaging
 import webapp2
 import jinja2
 import facebook
@@ -45,6 +47,9 @@ class AlbumsHandler (FacebookHandler):
 
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
+
+            graph = facebook.GraphAPI (user.access_token)
+            userInfo = graph.get_object ("%s" % user.id)
 
             if albumId:
                 result = Album.query (albumId, ancestor = user.key).fetch ()
@@ -107,7 +112,6 @@ class PictureExtractor (webapp2.RequestHandler):
         for fb_album in fb_albums:
             images_list = graph.get_object ("%s/photos" % fb_album["id"])
 
-            print images_list
             if images_list:
                 images.extend ([
                     Image (
@@ -121,6 +125,37 @@ class PictureExtractor (webapp2.RequestHandler):
 
         album.images = images
         album.put ()
+
+        cover = self.createCoverImage (graph, fb_albums[0]["id"])
+    def createCoverImage (self, graph, albumid):
+        pictures = graph.get_object ("%s/photos" % albumid, fields="picture",
+                limit=4)
+
+        if pictures:
+            bg = imaging.new ('RGB', (200, 200))
+            position = (
+                (0, 0, 100, 100),
+                (0, 100, 100, 200),
+                (100, 0, 200, 100),
+                (100, 100, 200, 200)
+            )
+
+            try:
+                index = 0
+                for picture in pictures["data"]: 
+                    data = cStringIO.StringIO(urllib2.urlopen(picture["picture"]).read ())
+                    thumbnail = imaging.open (data).resize ((100, 100))
+
+                    print thumbnail.format, thumbnail.size, thumbnail.mode, position[index]
+                    
+                    bg.paste (thumbnail, position[index])
+                    index += 1
+                return bg
+            except ValueError as e:
+                print e
+                raise e
+        print pictures;
+        pass
 
 class PicturesHandler (FacebookHandler):
     def get (self, albumId):
