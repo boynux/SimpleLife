@@ -1,5 +1,5 @@
-var module = angular.module ('facebook', []);
-module.provider ('facebook', function facebookProvider ($injector) {
+var module = angular.module ('facebook', [])
+.provider ('facebook', function facebookProvider ($injector) {
     var initialized = false;
     var defaultParams = { appId: '245215608990152', status: true, cookie: true, xfbml: true };
     var facebookEvents = {
