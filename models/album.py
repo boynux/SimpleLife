@@ -9,6 +9,7 @@ class Album (ndb.Model):
     status = ndb.IntegerProperty ()
     progress = ndb.IntegerProperty ()
     images = ndb.StructuredProperty (Image, repeated = True)
+    cover = ndb.BlobProperty ()
     created_time = ndb.DateTimeProperty (auto_now_add = True)
     updated_time = ndb.DateTimeProperty (auto_now_add = True)
 

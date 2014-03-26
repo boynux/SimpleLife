@@ -1,5 +1,5 @@
-var module = angular.module ('facebook', [])
-.provider ('facebook', function facebookProvider ($injector) {
+var module = angular.module ('facebook', []);
+module.provider ('facebook', function facebookProvider ($injector) {
     var initialized = false;
     var defaultParams = { appId: '245215608990152', status: true, cookie: true, xfbml: true };
     var facebookEvents = {
@@ -106,7 +106,7 @@ var module = angular.module ('facebook', [])
     }];
 });
 
-module.service ('facebookService', function (facebook, $rootScope, $q) {
+module.factory ('facebookService', function (facebook, $rootScope, $q) {
     var albums = [];
     var selectedAlbums = [];
     var selectedPhotos = [];
@@ -213,7 +213,7 @@ module.directive('facebookImage', function ($parse, facebook) {
 
     return {
         transclude: true,
-        restrict:'E',
+        restrict:'EA',
         templateUrl: 'partials/album-select.html',
         link: link
     }

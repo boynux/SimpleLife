@@ -29,8 +29,8 @@ function scrollHorizontal (animationService) {
         var itemWidth = 0;
 
         if (item.getImageSize ()) {
-            var itemHeight = Math.floor (item.getImageSize ().height / rows);
-            var itemWidth = Math.floor (item.getImageSize ().width / rows);
+            itemHeight = Math.floor (item.getImageSize ().height / rows);
+            itemWidth = Math.floor (item.getImageSize ().width / rows);
         }
 
         var x = offsetX + (Math.floor(i / rows) % cols) * width + padding * (Math.floor(i / rows) % cols);
@@ -54,7 +54,7 @@ function scrollHorizontal (animationService) {
     }, function (frame, i, to, item) {
         var width = item.get("width");
 
-        to.x -= speed[i] * parameters.animation.currentSpeed;
+        to.x -= Math.floor (speed[i] * parameters.animation.currentSpeed);
 
         if (to.x > virtualWidth) {
             to.x = -width;

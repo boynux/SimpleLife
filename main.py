@@ -1,5 +1,7 @@
 import urllib2
 import cStringIO
+import StringIO
+import base64
 import Image as imaging
 import webapp2
 import jinja2
@@ -55,7 +57,8 @@ class AlbumsHandler (FacebookHandler):
                 result = Album.query (albumId, ancestor = user.key).fetch ()
             else:
                 result = [
-                    {"id": album.key.id(), "name": album.name} 
+                    {"id": album.key.id(), "name": album.name, "cover":
+                        base64.b64encode (album.cover if album.cover else '')} 
                     for album in user.albums
                 ]
             """
@@ -91,7 +94,77 @@ class AlbumsHandler (FacebookHandler):
             print data
             if data:
                 album = user.add_album (data)
-                taskqueue.add(url='/extractor', params = {'user': user.id, "album": album.key.id (), 'fb_albums': json.dumps (data["fb_albums"])})
+                taskqueue.add(url='/extractor', params = {'user': user.id,
+                    "album": album.key.id (), 'fb_albums': json.dumps
+                    (data["fb_albums"])})
+
+                taskqueue.add(url='/create-cover', params = {'user': user.id,
+                    "album": album.key.id (), 'fb_album': data["fb_albums"][0]["id"]})
+
+class CreateCover (webapp2.RequestHandler):
+    def post (self):
+        user_id = self.request.get ('user')
+        print 'Create cover for  user id: %s' % user_id
+
+        album_key = self.request.get ('album')
+        fb_album = self.request.get ('fb_album')
+        images = []
+
+        user = User.get_user_by_id (user_id)
+        album = ndb.Key (Album, int(album_key), parent=user.key).get ()
+
+        graph = facebook.GraphAPI (user.access_token)
+        pictures = graph.get_object ("%s/photos" % fb_album, fields="picture",
+                limit=4)
+
+        if pictures:
+            bg = imaging.new ('RGBA', (200, 200))
+            position = (
+                (0, 0, 100, 100),
+                (0, 100, 100, 200),
+                (100, 0, 200, 100),
+                (100, 100, 200, 200)
+            )
+
+            try:
+                index = 0
+                for picture in pictures["data"]: 
+                    data = cStringIO.StringIO(urllib2.urlopen(picture["picture"]).read ())
+                    img = imaging.open (data)
+                    
+                    ratio = float (max (img.size)) / float (min (img.size))
+                    size = int (img.size[0] * ratio), int (img.size[1] * ratio)
+                    oldsize = img.size
+
+                    diff = tuple (x - y for x, y in zip (size, oldsize))
+
+                    img = img.resize (size)
+                    thumbnail = img.crop ((diff[0] / 2, diff[1] / 2, 100
+                        + diff[0] / 2, 100 + diff[1] /2 ))
+
+                    padding = [(100 - thumbnail.size[0]) / 2, (100 -
+                        thumbnail.size[1]) / 2]
+
+                    bg.paste (thumbnail, (position[index][0] + padding[0],
+                        position[index][1] + padding[1], position[index][2] -
+                        padding[0], position[index][3] - padding[1]))
+                    index += 1
+                    
+                    if index > 4:
+                        break
+
+                str = StringIO.StringIO ()
+                bg.save (str, 'PNG')
+
+                rawdata = str.getvalue ()
+                str.close ()
+
+                album.cover = rawdata
+                album.put ()
+            except ValueError as e:
+                print e
+                raise e
+
 
 class PictureExtractor (webapp2.RequestHandler):
     def post (self):
@@ -126,13 +199,12 @@ class PictureExtractor (webapp2.RequestHandler):
         album.images = images
         album.put ()
 
-        cover = self.createCoverImage (graph, fb_albums[0]["id"])
     def createCoverImage (self, graph, albumid):
         pictures = graph.get_object ("%s/photos" % albumid, fields="picture",
                 limit=4)
 
         if pictures:
-            bg = imaging.new ('RGB', (200, 200))
+            bg = imaging.new ('RGBA', (200, 200))
             position = (
                 (0, 0, 100, 100),
                 (0, 100, 100, 200),
@@ -144,13 +216,36 @@ class PictureExtractor (webapp2.RequestHandler):
                 index = 0
                 for picture in pictures["data"]: 
                     data = cStringIO.StringIO(urllib2.urlopen(picture["picture"]).read ())
-                    thumbnail = imaging.open (data).resize ((100, 100))
-
-                    print thumbnail.format, thumbnail.size, thumbnail.mode, position[index]
+                    img = imaging.open (data)
                     
-                    bg.paste (thumbnail, position[index])
+                    ratio = float (max (img.size)) / float (min (img.size))
+                    size = int (img.size[0] * ratio), int (img.size[1] * ratio)
+                    oldsize = img.size
+
+                    diff = tuple (x - y for x, y in zip (size, oldsize))
+
+                    img = img.resize (size)
+                    thumbnail = img.crop ((diff[0] / 2, diff[1] / 2, 100
+                        + diff[0] / 2, 100 + diff[1] /2 ))
+
+                    padding = [(100 - thumbnail.size[0]) / 2, (100 -
+                        thumbnail.size[1]) / 2]
+
+                    bg.paste (thumbnail, (position[index][0] + padding[0],
+                        position[index][1] + padding[1], position[index][2] -
+                        padding[0], position[index][3] - padding[1]))
                     index += 1
-                return bg
+                    
+                    if index > 4:
+                        break
+
+                str = StringIO.StringIO ()
+                bg.save (str, 'PNG')
+
+                rawdata = str.getvalue ()
+                str.close ()
+
+                return rawdata
             except ValueError as e:
                 print e
                 raise e
@@ -246,7 +341,6 @@ application = webapp2.WSGIApplication ([
     ('/([^/]+)/pictures', PicturesHandler),
     ('/renew_token', TokenHandler),
     ('/extractor', PictureExtractor),
-    # ('/([^/]+)/list', AlbumHandler),
-    # ('/([^/]+)/upload', AddPhoto)
+    ('/create-cover', CreateCover),
 ], config = CONFIG, debug = True)
 
