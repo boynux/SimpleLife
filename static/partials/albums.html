@@ -1,16 +1,16 @@
 <div ng-show='user' class='container-fluid'>
     <form name='main' ng-submit='submit()'>
     <div class="row albums">
-        <div class="col-md-3 col-sm-4 col-xs-6 thumbnail btn"  style="margin: .4em; background-color: rgba(100, 100, 240, .6)" data-toggle='modal' data-target='#addNewAlbum'>
+        <div class="col-md-3 col-sm-4 col-xs-6 thumbnail btn" data-toggle='modal' data-target='#addNewAlbum'>
             <div style='margin-top: 100%'></div>
             <div style='position: absolute; top: 0; left: 0; bottom: 0; right: 0' >
                 <span class='glyphicon glyphicon-plus' style='padding-top: calc(50% - 1em)'></span>
             </div>
         </div>
-        <div ng-repeat="album in albums" ng-click="$location.path (album.id + '/pictures')" style="margin: .4em" class="col-md-3 col-sm-4 col-xs-6 thumbnail btn">
+        <div ng-repeat="album in albums" ng-click="$location.path (album.id + '/pictures')" class="col-md-3 col-sm-4 col-xs-6 thumbnail btn">
             <div style='margin-top: 100%'></div>
             <div style='position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: transparent url(data:image/png;base64,{{album.cover}}) no-repeat center center scroll;' >
-                <h2 style='margin-top: calc(100% - 1.4em); background-color: rgba(0,0,0,.6)'>{{album.name}}</h2>
+                <h2 style='margin-top: calc(100% - 1.4em); background-color: rgba(0,0,0,.4)'>{{album.name}}</h2>
             </div>
         </div>
     </div>

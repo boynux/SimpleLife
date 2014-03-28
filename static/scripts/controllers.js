@@ -155,10 +155,75 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
     }
 ] ).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', '$routeParams', 
     function ($rootScope, $scope, $location, $http, RenewToken, $sce, $routeParams) {
-        var parameters = {
-            speed: 6,
-            currentSpeed: 6
-        };
+        $scope.pause = false;
+
+        $rootScope.$on ('bnx.sl.animation.pause', function (event) {
+            $scope.pause = true;
+        });
+
+        $rootScope.$on ('bnx.sl.animation.continue', function (event) {
+            $scope.pause = false;
+        });
+
+        $rootScope.$on ('bnx.sl.item.click', function (ngEvent, event) {
+            var parameters = $scope.animation.getParameters ();
+            if (!$scope.pause) {
+                $scope.animation.pause ();
+
+                var imageInfo = $scope.animation.getImage (event.displayObject.get ('name'));
+                var to = [
+                    imageInfo.width,
+                    imageInfo.height,
+                    (parameters.clientSize.width - imageInfo.width) / 2,
+                    (parameters.clientSize.height  - imageInfo.height) / 2,
+                    1000
+                ];
+
+                var set = ['width', 'height', 'x', 'y', 'zIndex'];
+                var effects = [
+                    collie.Effect.easeOutSine,
+                    collie.Effect.easeOutSine,
+                    collie.Effect.easeOutSine,
+                    collie.Effect.easeOutSine,
+                    collie.Effect.easeOutSine,
+                ];
+
+                collie.Timer.transition(event.displayObject, 600, {
+                    to:to,
+                    set:set,
+                    effect: effects
+                });
+            } else {
+                $scope.animation.continue ();
+            }
+        });
+
+        $rootScope.$on ('bnx.sl.canvas.move', function (ngEvent, event) {
+            var parameters = $scope.animation.getParameters ();
+
+            var offset = $(event.target).offset ();
+            var mousePosition = {
+                x: event.pageX - offset.left,
+                y: event.pageY - offset.top
+            };
+
+            parameters.mouseMove = true;
+
+            if (event.type == 'touchmove') {
+                mousePosition.x = event.originalEvent.touches[0].pageX - offset.left;
+                mousePosition.y = event.originalEvent.touches[0].pageX - offset.top;
+            }
+
+            $scope.animation.setAnimationSpeed (
+                Math.ceil (
+                    parameters.animation.maxSpeed * 
+                    (mousePosition.x / parameters.clientSize.width - 0.5)
+                )
+            );
+
+            event.stopPropagation(); 
+            event.preventDefault();
+        });
 
         $http.get ('/' + $routeParams.albumId + '/pictures').success (function (info) {
             // console.log (info);

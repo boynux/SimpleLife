@@ -46,7 +46,7 @@ var module = angular.module ('facebook', [])
         }
     };
 
-    var defer = function (func, deferred, $scope) {
+    var promise = function (func, deferred, $scope) {
         func (function (response) {
             if (response && response.error) {
                 deferred.reject (response);
@@ -72,7 +72,7 @@ var module = angular.module ('facebook', [])
         var login = function (params) {
             var deferred = $q.defer ();
 
-            defer (function (callback) {
+            promise (function (callback) {
                 FB.login (function (response) {
                     callback (response);
                 }, params);
@@ -84,7 +84,7 @@ var module = angular.module ('facebook', [])
         var api = function (path) {
             var deferred = $q.defer ();
 
-            defer (function (callback) {
+            promise (function (callback) {
                 FB.api (path, function (response) {
                     callback (response);
                 });
@@ -162,20 +162,6 @@ module.factory ('facebookService', function (facebook, $rootScope, $q) {
             return promiseWhenConnectedApi (function () {
                 return facebook.api ('me/' + album_id + '/photos?fields=picture')
             });
-
-            if (facebook.connected) {
-                var promise = facebook.api ('me/album_id/photos').then (function (result) {
-                });
-            } else {
-                $rootScope.$on ('fb.auth.authResponseChange', function (event, response) {
-                    if (response.status === 'connected') {
-                        var promise = facebook.api ('me/albums').then (function (result) {
-                        });
-                    }
-                });
-            }
-
-            return promise;
         },
 
         selectedAlbum: function (album, selected) {
