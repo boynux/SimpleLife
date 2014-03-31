@@ -1,4 +1,4 @@
 SimpleLife
 ==========
 
-Persnal Facebook App project
+Personal Facebook App project
