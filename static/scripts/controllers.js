@@ -10,6 +10,7 @@ simpleLifeControllers.controller ('IndexCtrl', ['$scope', '$location', '$http',
 simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $location, facebook, facebookService, RenewToken, $sce, Album) {
     Album.query (function (result) {
         $scope.albums = result
+        console.log ($scope.albums);
     }, function (reason) {
         !!reason && console.log (reason);
         $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
@@ -17,10 +18,7 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
             console.log (response);
             RenewToken.script = $sce.trustAsHtml (response);
         });
-
     });
-
-    console.log ($scope.albums);
 
     $scope.facebook = facebookService;
     $scope.facebook.albumName = '';
@@ -47,7 +45,7 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
     $scope.saveSelectedAlbums = function () {
         var selectedAlbums = [];
         var album = new Album ({
-            name: $scope.facebook.albumName || 'default', 
+            name: $scope.facebook.albumName || 'No Name', 
             fb_albums: facebookService.getSelectedAlbums ()
         });
 
@@ -56,40 +54,6 @@ simpleLifeControllers.controller ('AlbumsCtrl', function ($scope, $http, $locati
         });
 
         $('#addNewAlbum').modal ('hide');
- 
-/*       
-        $http.post ('albums', {"albums": facebookService.getSelectedAlbums ()}).success (
-            function (data, status, header, config) {
-                console.log ('data has been posted');
-            }
-        ).error (function (reason) {
-            !!reason && console.log (reason);
-            $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
-            .success (function (response) {
-                console.log (response);
-                RenewToken.script = $sce.trustAsHtml (response);
-            });
-        }); 
-*/
-        // $scope.templateUrl = "partials/confirm.html";
-        /*
-        $http.post ('albums', {"albums": facebookService.getSelectedAlbums ()}).success (
-            function (data, status, header, config) {
-
-                $http.get ('/pictures').success (function (info) {
-                    console.log (info);
-                    $scope.album_photos = info;
-                });
-            }
-        ).error (function (reason) {
-            !!reason && console.log (reason);
-            $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
-            .success (function (response) {
-                console.log (response);
-                RenewToken.script = $sce.trustAsHtml (response);
-            });
-        }); 
-        */
     }
 
     $scope.grantFbPhotoPermission = function () {
@@ -153,24 +117,28 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             });
         });
     }
-] ).controller ('ConfirmCtrl', ['$rootScope', '$scope', '$location', '$http', 'RenewToken', '$sce', '$routeParams', 
-    function ($rootScope, $scope, $location, $http, RenewToken, $sce, $routeParams) {
+] ).controller ('ConfirmCtrl', ['$scope', '$location', '$http', 'RenewToken', '$sce', '$routeParams', '$log', 
+    function ($scope, $location, $http, RenewToken, $sce, $routeParams, $log) {
         $scope.pause = false;
 
-        $rootScope.$on ('bnx.sl.animation.pause', function (event) {
+        $scope.$on ('bnx.sl.animation.pause', function (event) {
             $scope.pause = true;
         });
 
-        $rootScope.$on ('bnx.sl.animation.continue', function (event) {
+        $scope.$on ('bnx.sl.animation.continue', function (event) {
             $scope.pause = false;
         });
 
-        $rootScope.$on ('bnx.sl.item.click', function (ngEvent, event) {
+        $scope.$on ('bnx.sl.item.click', function (ngEvent, event) {
             var parameters = $scope.animation.getParameters ();
+
             if (!$scope.pause) {
                 $scope.animation.pause ();
 
+                $log.debug ($scope.animation);
+                $log.debug (event.displayObject.get ('name'));
                 var imageInfo = $scope.animation.getImage (event.displayObject.get ('name'));
+                console.debug ('image info:', imageInfo);
                 var to = [
                     imageInfo.width,
                     imageInfo.height,
@@ -193,12 +161,13 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                     set:set,
                     effect: effects
                 });
+
             } else {
                 $scope.animation.continue ();
             }
         });
 
-        $rootScope.$on ('bnx.sl.canvas.move', function (ngEvent, event) {
+        $scope.$on ('bnx.sl.canvas.move', function (ngEvent, event) {
             var parameters = $scope.animation.getParameters ();
 
             var offset = $(event.target).offset ();

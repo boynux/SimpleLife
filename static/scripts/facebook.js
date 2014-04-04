@@ -1,6 +1,7 @@
-var module = angular.module ('facebook', [])
-.provider ('facebook', function facebookProvider ($injector) {
+var module = angular.module ('bnx.module.facebook', [])
+.provider ('facebook', function facebookProvider () {
     var initialized = false;
+
     var defaultParams = { appId: '245215608990152', status: true, cookie: true, xfbml: true };
     var facebookEvents = {
         'auth': ['authResponseChange', 'statusChange', 'login', 'logout']
@@ -8,33 +9,25 @@ var module = angular.module ('facebook', [])
 
     var Q = [];
 
-    this.init = function  (params) {
+    this.init = function (params) {
         window.fbAsyncInit = function() {
-            FB.init(params || defaultParams);
+            $.extend (defaultParams, params);
+            FB.init(defaultParams);
     
             initialized = true;
             console.log ("Facebook initialization done.");
 
-            processQ ();
+            processPostInitializeQ ();
         };
-
-        (function() {
-            var e = document.createElement('script');
-            e.type = 'text/javascript';
-            e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
-            e.async = true;
-            document.getElementById('fb-root').appendChild(e);
-        }(document));
-
     };
 
-    this.addToQ = function (callback, self, args) {
+    function executeWhenInitialized (callback, self, args) {
         console.log ("adding to Q: ", callback);
         Q.push ([callback, self, args]);
     };
 
 
-    var processQ = function () {
+    var processPostInitializeQ = function () {
         console.log ('Processing Q messages.');
         while (item = Q.shift ()) {
 
@@ -46,20 +39,33 @@ var module = angular.module ('facebook', [])
         }
     };
 
-    var promise = function (func, deferred, $scope) {
-        func (function (response) {
-            if (response && response.error) {
-                deferred.reject (response);
-            } else {
-                deferred.resolve (response);
-            }
-
-            $scope.$apply ();
-        });
-    };
 
     this.$get = ["$rootScope", "$q",  function ($rootScope, $q) {
-        var registerEventHandlers = function () {
+        var Facebook = function () {
+            if (!initialized) {
+                executeWhenInitialized (Facebook.registerEventHandlers, this, []);
+            } else {
+                Facebook.registerEventHandlers ();
+            }
+        }
+
+        Facebook.promise = function (func) {
+            var deferred = $q.defer ();
+
+            func (function (response) {
+                if (response && response.error) {
+                    deferred.reject (response);
+                } else {
+                    deferred.resolve (response);
+                }
+
+                $rootScope.$digest ();
+            });
+
+            return deferred.promise;
+        };
+
+        Facebook.registerEventHandlers = function () {
             angular.forEach (facebookEvents, function (events, domain) {
                 angular.forEach (events, function (_event) {
                     FB.Event.subscribe (domain + '.' + _event, function (response) {
@@ -69,57 +75,55 @@ var module = angular.module ('facebook', [])
             });
         };
  
-        var login = function (params) {
-            var deferred = $q.defer ();
-
-            promise (function (callback) {
-                FB.login (function (response) {
-                    callback (response);
-                }, params);
-            }, deferred, $rootScope);
-
-            return deferred.promise;
-        }
-       
-        var api = function (path) {
-            var deferred = $q.defer ();
-
-            promise (function (callback) {
-                FB.api (path, function (response) {
-                    callback (response);
+        Facebook.prototype = {
+            login: function (params) {
+                return Facebook.promise (function (callback) {
+                    FB.login (function (response) {
+                        callback (response);
+                    }, params);
                 });
-            }, deferred, $rootScope);
-
-            return deferred.promise;
-        }
-
-        if (!initialized) {
-            this.addToQ (registerEventHandlers, this, []);
-        } else {
-            registerEventHandlers ();
-        }
-
-        return  {
-            api: api,
-            login: login
-        }
+            },
+       
+            api: function (path) {
+                return Facebook.promise (function (callback) {
+                    FB.api (path, function (response) {
+                        callback (response);
+                    });
+                });
+            }
+        };
+       
+        return new Facebook ();
     }];
 });
 
-module.factory ('facebookService', function (facebook, $rootScope, $q) {
+module.directive ('facebook', function ($location, facebook) {
+    var template = 
+        "<div id='fb-root'><script type='text/javascript' async='true' src='" + 
+        "//connect.facebook.net/en_US/all.js' id='facebook-jssdk'></script></div>";
+
+    return {
+        restrict:'EA',
+        template: template,
+    }
+});
+
+module.factory ('facebookService', function (facebook, $rootScope, $q, $log) {
     var albums = [];
     var selectedAlbums = [];
     var selectedPhotos = [];
     var connected = false;
 
     var promiseWhenConnectedApi = function (callback) {
+        $log.debug ('facebookSevice promise status: ', facebook.connected);
         if (facebook.connected) {
             var promise = callback ();
         } else {
             var defer = $q.defer ();
 
-            $rootScope.$watch ('fb.auth.authResponseChange', function (event, response) {
-                if (response.status === 'connected') {
+            $rootScope.$watch (facebook.connected, function (status) {
+                $log.debug (status);
+                if (status) {
                     defer.resolve (callback ());
                 }
             });
@@ -150,12 +154,9 @@ module.factory ('facebookService', function (facebook, $rootScope, $q) {
         },
 
         getAlbums: function () {
-            var promise =
-                promiseWhenConnectedApi (function () {
-                    return facebook.api ('me/albums');
-                });
-
-            return promise;
+            return promiseWhenConnectedApi (function () {
+                return facebook.api ('me/albums');
+            });
         },
         
         getAlbumPhotos: function (album_id) {
@@ -204,5 +205,4 @@ module.directive('facebookImage', function ($parse, facebook) {
         link: link
     }
 });
-
 

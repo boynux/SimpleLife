@@ -4,7 +4,7 @@ var simpleLifeApp = angular.module ('simpleLifeApp', [
     'ngRoute',
     'ngResource',
     'simpleLifeControllers',
-    'facebook',
+    'bnx.module.facebook',
     'bnx.simple-life.animation'
 ]).config (['$routeProvider', 'facebookProvider',
     function ($routeProvider, facebookProvider) {

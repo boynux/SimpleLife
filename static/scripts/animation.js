@@ -1,189 +1,149 @@
-var module = angular.module ('bnx.simple-life.animation', []).provider ('animation', function animationProvider () {
-    var initialized = false;
-
-    function getImage (id) {
-        return inventory.images[id];
-    }
-
-    function addImages (images) {
-        var items = {};
-
-        angular.forEach (images, function (item, id) {
-            if (!collie.ImageManager.getImage (item.id || id)) {
-                items[item.id || id] = item.source;      
-                updateImageInfo (item.id || id, item);
-            }
-        });
-
-        collie.ImageManager.add(items);
-    }
-
-    function updateImageInfo (id, image)
-    {
-        inventory.images[image.id || id] = image;
-
-        parameters.images.count ++;
-
-        parameters.images.averageHeight = 
-            (parameters.images.averageHeight + image.height) / 2;
-        parameters.images.averageWidth = 
-            (parameters.images.averageWidth + image.width) / 2;
-    }
-
-    function drawImage (id, config) {
-        var properties = {
-            name: id,
-            originX: 'left',
-            originY: 'top',
-            
-            backgroundImage: id,
-            fitImage: true
-        };
-
-        if (config) {
-            $.extend (properties, config);
-        }
-
-        var image = new collie.DisplayObject(properties).addTo (layer);
-
-        return image;
-    }
-
-    this.$get = ['$rootScope', '$q', function ($rootScope, $q) {
-        
-
-        $rootScope.$watch (initialized, function () {
-            $rootScope.$broadcast ('animation.initialize', initialized);
-        });
-
-        function animation (params) {
-
-            function clear ()
-            {
-                collie.ImageManager.reset ();
-
-                parameters.images.count = 0;
-                inventory.images = {};
-            }
-
-            function init (params) {
-                $.extend (parameters, params);
-
-                clear ();
-
-                layer = new collie.Layer({
-                    width: parameters.clientSize.width,
-                  height: parameters.clientSize.height
-                });
-
-                initialized = true;
-            }
-
-            function getImage (id) {
-                return inventory.images[id];
-            }
-
-            function addImages (images) {
-                var items = {};
-
-                angular.forEach (images, function (item, id) {
-                    if (!collie.ImageManager.getImage (item.id || id)) {
-                        items[item.id || id] = item.source;      
-                        updateImageInfo (item.id || id, item);
-                    }
-                });
-
-                collie.ImageManager.add(items);
-            }
-
-            function updateImageInfo (id, image)
-            {
-                inventory.images[image.id || id] = image;
-
-                parameters.images.count ++;
-
-                parameters.images.averageHeight = 
-                    (parameters.images.averageHeight + image.height) / 2;
-                parameters.images.averageWidth = 
-                    (parameters.images.averageWidth + image.width) / 2;
-            }
-
-            function drawImage (id, config) {
-                var properties = {
-                    name: id,
-                    originX: 'left',
-                    originY: 'top',
-                    
-                    backgroundImage: id,
-                    fitImage: true
-                };
-
-                if (config) {
-                    $.extend (properties, config);
-                }
-
-                var image = new collie.DisplayObject(properties).addTo (layer);
-
-                return image;
-            }
-
-            var parameters = {
-                clientSize: {
-                    width: document.body.clientHeight,
-                    height: document.body.clientWidth
-                },
-
-                animation: {
-                    maxSpeed: 6,
-                    currentSpeed: 2
-                },
-
-                images: {
-                    count: 0,
-                    averageWidth: 0,
-                    averageHeight: 0,
-                },
-
-                animationQ: []
-            }
-
-            var inventory = {
-                images: {},
-            };
-
-            var layer;
-
-            init (params);
-
-            this.init = init;
-            this.addImages = addImages,
-            this.getImage = getImage,
-            this.getImages = function () {return inventory;},
-            this.getImagesInfo = function () {return parameters.images;},
-            this.getParameters = function () {return parameters;},
-
-            this.setAnimationSpeed = function (speed) { parameters.animation.currentSpeed = speed; },
-
-            this.drawImage = drawImage,
-            this.pause = function () {
-                angular.forEach (parameters.animationQ, function (item) {item.pause (); });
-                $rootScope.$broadcast ('bnx.sl.animation.pause', this);
+var module = angular.module ('bnx.simple-life.animation', []).
+factory ('animation', function ($rootScope, $q, $log) {
+    function Animation (params) {
+        this.parameters = {
+            clientSize: {
+                width: document.body.clientHeight,
+                height: document.body.clientWidth
             },
 
-            this.continue = function () {
-                angular.forEach (parameters.animationQ, function (item) {item.start (); });
-                $rootScope.$broadcast ('bnx.sl.animation.continue', this);
-            }
+            animation: {
+                maxSpeed: 6,
+                currentSpeed: 2
+            },
 
-            this.getLayer = function () { return layer; }
+            images: {
+                count: 0,
+                averageWidth: 0,
+                averageHeight: 0,
+            },
         }
 
-        return {
-            new: function (params) {
-                return new animation (params);
+        this.displayObject = [],
+        this.animationQ = []
+        this.inventory = {
+            images: {},
+        };
+
+        $.extend (this.parameters, params);
+        $log.debug ("initializing new Animation object", this.parameters);
+
+        this.layer = new collie.Layer({
+            width: this.parameters.clientSize.width,
+            height: this.parameters.clientSize.height
+        });
+
+        this.initialized = true;
+    };
+
+    Animation.prototype = {
+
+        clear: function ()
+        {
+            collie.ImageManager.reset ();
+
+            this.parameters.images.count = 0;
+            this.inventory.images = {};
+            this.layer.clear ();
+        },
+
+        getImage:function  (id) {
+            return this.inventory.images[id];
+        },
+
+        updateImageInfo: function (id, image)
+        {
+            console.debug (id, image);
+            this.inventory.images[id] = image;
+            this.parameters.images.count ++;
+
+            this.parameters.images.averageHeight = 
+                (this.parameters.images.averageHeight + image.height) / 2;
+            this.parameters.images.averageWidth = 
+                (this.parameters.images.averageWidth + image.width) / 2;
+        },
+
+        addImages: function (images) {
+            var items = {};
+
+            console.debug ('this is:', this);
+            angular.forEach (images, function (item, id) {
+                var itemId = item.id || id;
+
+                if (!collie.ImageManager.getImage (itemId)) {
+                    items[itemId] = item.source;      
+                }
+
+                this.updateImageInfo (itemId, item);
+            }.bind (this));
+
+            var defer = $q.defer ();
+
+            collie.ImageManager.add(items, function () {
+                defer.resolve (true);
+            });
+
+            return defer.promise;
+        },
+
+        drawImage: function (id, config) {
+            var properties = {
+                name: id,
+                originX: 'left',
+                originY: 'top',
+
+                backgroundImage: id,
+                fitImage: true
+            };
+
+            if (config) {
+                $.extend (properties, config);
             }
+
+            var image = new collie.DisplayObject(properties).addTo (this.layer);
+
+            this.displayObject.push (image);
+
+            return image;
+        },
+
+        getImages: function () {return this.inventory.images;},
+        getDisplayObject: function (id) {return this.displayObject [id]; },
+        getDisplayObjects: function () {return this.displayObject; },
+        getImagesInfo: function () {return this.parameters.images;},
+        getParameters: function () {return this.parameters;},
+        setAnimationSpeed: function (speed) { this.parameters.animation.currentSpeed = speed; },
+        getLayer: function () { return this.layer; },
+
+        start: function (element) {
+            this.element = element;
+
+            collie.Renderer.addLayer(this.layer);
+            collie.Renderer.load(element);
+            collie.Renderer.start();
+        },
+
+        pause: function () {
+            angular.forEach (this.animationQ, function (item) {item.pause (); });
+            $rootScope.$broadcast ('bnx.sl.animation.pause', this);
+        },
+
+        continue: function () {
+            angular.forEach (this.animationQ, function (item) {item.start (); });
+            $rootScope.$broadcast ('bnx.sl.animation.continue', this);
+        },
+
+        stop: function () {
+            while (this.animationQ.length)
+                this.animationQ.pop().stop();
         }
-    }];
+    };
+
+    return {
+        new: function (params) {
+            return new Animation (params);
+        }
+    }
 });
 
 module.directive('animationAlbumShow', function ($rootScope, animation) {
@@ -196,8 +156,6 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
         });
 
         var parameters = scope.animation.getParameters ();
-        var clientSize = parameters.clientSize;
-        var itemAnimations = [];
 
         element.bind ('mousemove touchmove',  function (event) {
             $rootScope.$broadcast ('bnx.sl.canvas.move', event);
@@ -210,38 +168,12 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
     
             $rootScope.$broadcast ('bnx.sl.animation.loaded');
 
-            var itemSize = {
-                width: 100,
-                height: 100
-            };
-
-            var pictures = {};
-            var picture_repository = {}
-            var avgHeight = clientSize.height;
-            var avgWidth = clientSize.width;
-            var ratio = 1;
-
-            var items = [];
-            var itemCount = 0;
-
             scope.animation.addImages (ngModel.$modelValue);
 
-            angular.forEach (ngModel.$modelValue, function (photo, id) {
-                pictures[photo.id || id] = photo.source;
-                picture_repository[photo.id || id] = {
-                    'source': photo.source,
-                    'width': photo.width,
-                    'height': photo.height
-                };
-            });
-
-            var imagesInfo = scope.animation.getImagesInfo ();
-            var layer = scope.animation.getLayer ();
-
-            angular.forEach (pictures, function (link, id) {
+            angular.forEach (scope.animation.getImages (), function (link, id) {
                 var item = scope.animation.drawImage (id, {
-                    x: clientSize.width / 2,
-                    y: clientSize.height / 2,
+                    x: parameters.clientSize.width / 2,
+                    y: parameters.clientSize.height / 2,
                 }).attach ({
                     click: function (event) {
                         $rootScope.$broadcast ('bnx.sl.item.click', event);
@@ -255,47 +187,29 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                         $rootScope.$broadcast ('bnx.sl.item.mouseup', event);
                     }
                 });
-
-                items.push(item);
             });
 
             var layoutFunctions = [scrollHorizontal];
             var layoutSelectedIndex = -1;
 
-            $.extend (parameters, {
-                picture_repository: picture_repository,
-                items: items,
-                itemsCount: items.length,
-                clientSize: clientSize,
-                scale: ratio,
-                rows: 3,
-            });
-                
             var control = collie.Timer.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
                 arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](scope.animation));
             });
 
-            itemCount = items.length;
-
-
             function arrangeItems(getTransitionInfo, updateRepeatInfo){
                 var parameters = scope.animation.getParameters ();
-                var centerX = clientSize.width / 2;
-                var centerY = clientSize.height / 2;
+                var centerX = parameters.clientSize.width / 2;
+                var centerY = parameters.clientSize.height / 2;
                 var from, to;
                 var aFrom, aTo, set, effects;
                 var scaleFrom, scaleTo;
-                var item;
 
-                while (parameters.animationQ.length)
-                    parameters.animationQ.pop().stop();
-
-                for (var i = 0; i < itemCount; i++){
-                    var item = items[i];
-
+                scope.animation.stop ();
+                
+                angular.forEach (scope.animation.getDisplayObjects (), function (item, index) {
                     from = item.get();
-                    to = getTransitionInfo(i, item);
+                    to = getTransitionInfo(index, item);
                     aFrom = [];
                     aTo = [];
                     set = [];
@@ -327,11 +241,11 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                                 _params.item.set(_params.to);
                             }
                         }
-                    }) (i, to, item);
+                    }) (index, to, item);
 
-                    parameters.animationQ.push(
+                    scope.animation.animationQ.push(
                         collie.Timer.queue().
-                        delay(function(){}, i * 8).
+                        delay(function(){}, index * 8).
                         transition(item, 600, {
                             from:aFrom,
                             to:aTo,
@@ -341,20 +255,16 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                         repeat(repeat, 5)
                     );
 
-                }
+                });
             }
 
-            collie.Renderer.addLayer(layer);
-            collie.Renderer.load(element[0]);
-            collie.Renderer.start();
-
+            scope.animation.start (element[0]);
             scope.$on('$destroy', function() {
-                control.stop ();
-                while (itemAnimations.length)
-                    itemAnimations.pop().stop();
-
-                layer.clear ();
                 console.debug ('destroy has been called');
+
+                control.stop ();
+                scope.animation.stop ();
+                scope.animation.clear ();
 
                 delete scope.animation;
             });

@@ -45,7 +45,7 @@ class SignInPage (FacebookHandler):
 
 class AlbumsHandler (FacebookHandler):
     def get (self, albumId):
-        albums = []
+        result = []
 
         if self.current_user:
             user = User.get_user_by_id (self.current_user["id"])
