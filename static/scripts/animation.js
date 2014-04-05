@@ -41,6 +41,13 @@ factory ('animation', function ($rootScope, $q, $log) {
 
         clear: function ()
         {
+            $log.debug ('clear called, removing objects ...');
+            angular.forEach (this.getDisplayObjects (), function (item) {
+                item.detach ('click');
+                item.detach ('mouseup');
+                item.detach ('mousedown');
+            });
+
             collie.ImageManager.reset ();
 
             this.parameters.images.count = 0;
@@ -62,6 +69,25 @@ factory ('animation', function ($rootScope, $q, $log) {
                 (this.parameters.images.averageHeight + image.height) / 2;
             this.parameters.images.averageWidth = 
                 (this.parameters.images.averageWidth + image.width) / 2;
+        },
+
+        addImage: function (item, updateInfo) {
+            var itemId = item.id;
+            var items = [];
+
+            if (!collie.ImageManager.getImage (itemId)) {
+                items[itemId] = item.source;      
+            }
+
+            updateInfo && this.updateImageInfo (itemId, item);
+
+            var defer = $q.defer ();
+
+            collie.ImageManager.add(items, function () {
+                defer.resolve (true);
+            });
+
+            return defer.promise;
         },
 
         addImages: function (images) {
@@ -129,6 +155,33 @@ factory ('animation', function ($rootScope, $q, $log) {
         setAnimationSpeed: function (speed) { this.parameters.animation.currentSpeed = speed; },
         getLayer: function () { return this.layer; },
 
+        transition: function (object, to, effect) {
+            fromArray = [];
+            toArray = [];
+            setArray = [];
+            effectArray = [];
+
+            for (var key in to){
+                toArray.push(to[key]);
+                setArray.push(key);
+                effectArray.push(effect || collie.Effect.easeOutSine);
+            }
+
+            var defer = $q.defer ();
+
+            collie.Timer.transition(object, 400, {
+                to:toArray,
+                set:setArray,
+                effect: effectArray
+            }).attach ({
+                'complete': function  () {
+                    defer.resolve (true);
+                }
+            });
+
+            return defer.promise;
+        },
+
         repeat: function (callback) {
             return this.controls.push (collie.Timer.repeat (callback));
         },
@@ -171,8 +224,10 @@ factory ('animation', function ($rootScope, $q, $log) {
     }
 });
 
-module.directive('animationAlbumShow', function ($rootScope, animation) {
+module.directive('animationAlbumShow', function ($rootScope, animation, $log) {
     function link (scope, element, attrs, ngModel) {
+        $log.debug ("Loading new animation ...");
+
         scope.animation = animation.new ({
             clientSize: {
                 width : element.offsetParent ().width (),
@@ -188,6 +243,18 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                 return;
     
             $rootScope.$broadcast ('bnx.sl.animation.loaded');
+
+            scope.animation.addImage ({
+                id: 'background',
+                source: '/static/images/background-2.jpg'
+            });
+
+            scope.animation.drawImage ('background', {
+                x: 0,
+                y: 0,
+                zIndex: -1,
+                fitImage: false,
+            });
 
             scope.animation.addImages (ngModel.$modelValue);
 
@@ -222,6 +289,10 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                 
                 angular.forEach (scope.animation.getDisplayObjects (), function (item, index) {
                     from = item.get();
+
+                    if (from.name == 'background')
+                        return;
+
                     to = getTransitionInfo(index, item);
                     aFrom = [];
                     aTo = [];

@@ -97,6 +97,26 @@ var module = angular.module ('bnx.module.facebook', [])
     }];
 });
 
+module.directive ('facebookLogin', function () {
+    var template = 
+        '<div class="fb-login-button" ' +
+        'data-max-rows="1" ' + 
+        'data-size="{{buttonSize}}" ' +
+        'data-show-faces="{{showFaces}}" ' +
+        'data-auto-logout-link="{{autoLogout}}" ' +
+        '></div>';
+
+    return {
+        response: 'EA',
+        scope: {
+            'buttonSize': '=',
+            'autoLogout': '=',
+            'showFaces': '='
+        },
+        template: template
+    }
+});
+
 module.directive ('facebook', function ($location, facebook) {
     var template = 
         "<div id='fb-root'><script type='text/javascript' async='true' src='" + 

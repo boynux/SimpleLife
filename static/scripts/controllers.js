@@ -130,12 +130,25 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
         });
 
         $scope.$on ('bnx.sl.item.click', function (ngEvent, event) {
+            $log.debug ('click detected!');
             var parameters = $scope.animation.getParameters ();
 
             if (!$scope.pause) {
+                $log.debug ('click, start showing image ...');
+                $scope.currentObject = event.displayObject;
                 $scope.animation.pause ();
 
                 var imageInfo = $scope.animation.getImage (event.displayObject.get ('name'));
+                var currentPosition = event.displayObject.get ();
+                $scope.currentPosition = {
+                    x: currentPosition.x,
+                    y: currentPosition.y,
+                    zIndex: currentPosition.zIndex,
+                    width: currentPosition.width,
+                    height: currentPosition.height,
+                }
+
+                $log.debug ($scope.currentPosition);
                 console.debug ('image info:', imageInfo);
 
                 var minWidth = Math.min (imageInfo.width, parameters.clientSize.width);
@@ -146,31 +159,24 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
                 var targetWidth = imageInfo.width / ratio;
                 var targetHeight = imageInfo.height / ratio;
 
-                var to = [
-                    targetWidth,
-                    targetHeight,
-                    (parameters.clientSize.width - targetWidth) / 2,
-                    (parameters.clientSize.height  - targetHeight) / 2,
-                    1000
-                ];
+                var to = {
+                    width: targetWidth,
+                    height: targetHeight,
+                    x: (parameters.clientSize.width - targetWidth) / 2,
+                    y: (parameters.clientSize.height  - targetHeight) / 2,
+                    zIndex: 1000
+                };
 
-                var set = ['width', 'height', 'x', 'y', 'zIndex'];
-                var effects = [
-                    collie.Effect.easeOutSine,
-                    collie.Effect.easeOutSine,
-                    collie.Effect.easeOutSine,
-                    collie.Effect.easeOutSine,
-                    collie.Effect.easeOutSine,
-                ];
-
-                collie.Timer.transition(event.displayObject, 600, {
-                    to:to,
-                    set:set,
-                    effect: effects
-                });
-
+                $scope.animation.transition (event.displayObject, to, collie.Effect.easeOutElastic);
             } else {
-                $scope.animation.continue ();
+                $log.debug ('click, start hiding image ...');
+                $scope.animation.transition (
+                    $scope.currentObject,
+                    $scope.currentPosition, 
+                    collie.Effect.easeInQuint
+                ).then (function () {
+                    $scope.animation.continue ();
+                });
             }
         });
 
