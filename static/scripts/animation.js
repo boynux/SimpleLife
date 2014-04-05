@@ -19,6 +19,7 @@ factory ('animation', function ($rootScope, $q, $log) {
             },
         }
 
+        this.controls = [],
         this.displayObject = [],
         this.animationQ = []
         this.inventory = {
@@ -30,7 +31,7 @@ factory ('animation', function ($rootScope, $q, $log) {
 
         this.layer = new collie.Layer({
             width: this.parameters.clientSize.width,
-            height: this.parameters.clientSize.height
+            height: this.parameters.clientSize.height,
         });
 
         this.initialized = true;
@@ -100,7 +101,20 @@ factory ('animation', function ($rootScope, $q, $log) {
                 $.extend (properties, config);
             }
 
-            var image = new collie.DisplayObject(properties).addTo (this.layer);
+            var image = new collie.FramedImage (properties).addTo (this.layer);
+            image.attach ({
+                click: function (event) {
+                    $rootScope.$broadcast ('bnx.sl.item.click', event);
+                },
+
+                mousedown: function (event) {
+                    $rootScope.$broadcast ('bnx.sl.item.mousedown', event);
+                },
+
+                mouseup: function (event) {
+                    $rootScope.$broadcast ('bnx.sl.item.mouseup', event);
+                }
+            });
 
             this.displayObject.push (image);
 
@@ -115,12 +129,20 @@ factory ('animation', function ($rootScope, $q, $log) {
         setAnimationSpeed: function (speed) { this.parameters.animation.currentSpeed = speed; },
         getLayer: function () { return this.layer; },
 
+        repeat: function (callback) {
+            return this.controls.push (collie.Timer.repeat (callback));
+        },
+
         start: function (element) {
             this.element = element;
 
+            $(element).bind ('mousemove touchmove',  function (event) {
+                $rootScope.$broadcast ('bnx.sl.canvas.move', event);
+            });
+
             collie.Renderer.addLayer(this.layer);
             collie.Renderer.load(element);
-            collie.Renderer.start();
+            collie.Renderer.start("30fps");
         },
 
         pause: function () {
@@ -134,6 +156,9 @@ factory ('animation', function ($rootScope, $q, $log) {
         },
 
         stop: function () {
+            while (this.controls.length)
+                this.controls.pop ().stop ();
+
             while (this.animationQ.length)
                 this.animationQ.pop().stop();
         }
@@ -151,15 +176,11 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
         scope.animation = animation.new ({
             clientSize: {
                 width : element.offsetParent ().width (),
-                height : document.body.clientHeight - 100
+                height : document.body.clientHeight - 100,
             }
         });
 
         var parameters = scope.animation.getParameters ();
-
-        element.bind ('mousemove touchmove',  function (event) {
-            $rootScope.$broadcast ('bnx.sl.canvas.move', event);
-        });
 
         ngModel.$render = function () {
 
@@ -174,25 +195,17 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                 var item = scope.animation.drawImage (id, {
                     x: parameters.clientSize.width / 2,
                     y: parameters.clientSize.height / 2,
-                }).attach ({
-                    click: function (event) {
-                        $rootScope.$broadcast ('bnx.sl.item.click', event);
-                    },
 
-                    mousedown: function (event) {
-                        $rootScope.$broadcast ('bnx.sl.item.mousedown', event);
-                    },
-                        
-                    mouseup: function (event) {
-                        $rootScope.$broadcast ('bnx.sl.item.mouseup', event);
-                    }
+                    radius: 8,
+                    strokeWidth: 4,
+                    strokeColor: "#fff"
                 });
             });
 
             var layoutFunctions = [scrollHorizontal];
             var layoutSelectedIndex = -1;
 
-            var control = collie.Timer.repeat(function(oEvent){
+            var control = scope.animation.repeat(function(oEvent){
                 layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
                 arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](scope.animation));
             });
@@ -252,7 +265,7 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
                             set:set,
                             effect: effects
                         }).
-                        repeat(repeat, 5)
+                        repeat(repeat, 16)
                     );
 
                 });
@@ -262,7 +275,6 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
             scope.$on('$destroy', function() {
                 console.debug ('destroy has been called');
 
-                control.stop ();
                 scope.animation.stop ();
                 scope.animation.clear ();
 
@@ -278,3 +290,67 @@ module.directive('animationAlbumShow', function ($rootScope, animation) {
     }
 });
 
+collie.FramedImage = collie.Class({
+    $init : function (htOption) {
+        this.option({
+            radius : 0,
+            strokeColor : '',
+            strokeWidth : 0,
+            fillColor : '',
+        }, null, true);
+
+        this._sBorderRadius = collie.util.getCSSPrefix("border-radius", true);
+    },
+
+    onCanvasDraw : function (oEvent) {
+        var oContext = oEvent.context;
+        var nRadius = this._htOption.radius;
+        var bIsRetinaDisplay = collie.Renderer.isRetinaDisplay();
+        var nWidth = this._htOption.width;
+        var nHeight = this._htOption.height;
+        var nStrokeWidth = this._htOption.strokeWidth;
+
+        if (this._htOption.strokeColor) {
+            oContext.strokeStyle = this._htOption.strokeColor;
+        }
+
+        if (this._htOption.strokeWidth) {
+            oContext.lineWidth = nStrokeWidth;
+        }
+
+        if (nRadius) {
+            oContext.save();
+            oContext.translate(oEvent.x, oEvent.y);
+            oContext.beginPath();
+            oContext.moveTo(nRadius, 0);
+            oContext.lineTo(nWidth - nRadius, 0);
+            oContext.quadraticCurveTo(nWidth, 0, nWidth, nRadius);
+            oContext.lineTo(nWidth, nHeight - nRadius);
+            oContext.quadraticCurveTo(nWidth, nHeight, nWidth - nRadius, nHeight);
+            oContext.lineTo(nRadius, nHeight);
+            oContext.quadraticCurveTo(0, nHeight, 0, nHeight - nRadius);
+            oContext.lineTo(0, nRadius);
+            oContext.quadraticCurveTo(0, 0, nRadius, 0);
+            oContext.closePath();
+            oContext.restore();
+
+            if (this._htOption.fillColor || this._htOption.fillImage) {
+                oContext.fill();
+            }    
+
+            if (this._htOption.strokeWidth) {
+                oContext.stroke();
+            }
+        } else {
+            if (this._htOption.fillColor || this._htOption.fillImage) {
+                oContext.fillRect(oEvent.x, oEvent.y, nWidth, nHeight);
+            }
+
+            if (this._htOption.strokeWidth) {
+                oContext.strokeRect(oEvent.x, oEvent.y, nWidth, nHeight);
+            }
+        }
+
+        this._bChanged = false;
+    }
+}, collie.DisplayObject);

@@ -135,15 +135,22 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             if (!$scope.pause) {
                 $scope.animation.pause ();
 
-                $log.debug ($scope.animation);
-                $log.debug (event.displayObject.get ('name'));
                 var imageInfo = $scope.animation.getImage (event.displayObject.get ('name'));
                 console.debug ('image info:', imageInfo);
+
+                var minWidth = Math.min (imageInfo.width, parameters.clientSize.width);
+                var minHeight = Math.min (imageInfo.height, parameters.clientSize.height);
+
+                var ratio = Math.max (imageInfo.width / minWidth, imageInfo.height / minHeight);
+
+                var targetWidth = imageInfo.width / ratio;
+                var targetHeight = imageInfo.height / ratio;
+
                 var to = [
-                    imageInfo.width,
-                    imageInfo.height,
-                    (parameters.clientSize.width - imageInfo.width) / 2,
-                    (parameters.clientSize.height  - imageInfo.height) / 2,
+                    targetWidth,
+                    targetHeight,
+                    (parameters.clientSize.width - targetWidth) / 2,
+                    (parameters.clientSize.height  - targetHeight) / 2,
                     1000
                 ];
 
