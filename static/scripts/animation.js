@@ -343,6 +343,7 @@ module.directive('animationAlbumShow', function ($rootScope, animation, $log) {
             }
 
             scope.animation.start (element[0]);
+
             scope.$on('$destroy', function() {
                 console.debug ('destroy has been called');
 
