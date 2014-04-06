@@ -131,14 +131,20 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
 
         $scope.$on ('bnx.sl.item.click', function (ngEvent, event) {
             $log.debug ('click detected!');
-            var parameters = $scope.animation.getParameters ();
-
             if (!$scope.pause) {
+                if (event.displayObject.get('name') == 'background') {
+                    return;
+                }
+
+                var parameters = $scope.animation.getParameters ();
+
                 $log.debug ('click, start showing image ...');
                 $scope.currentObject = event.displayObject;
                 $scope.animation.pause ();
 
                 var imageInfo = $scope.animation.getImage (event.displayObject.get ('name'));
+                $scope.activeImage = imageInfo.source;
+
                 var currentPosition = event.displayObject.get ();
                 $scope.currentPosition = {
                     x: currentPosition.x,

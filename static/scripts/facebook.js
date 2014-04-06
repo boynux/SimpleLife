@@ -101,21 +101,50 @@ module.directive ('facebookLogin', function () {
     var template = 
         '<div class="fb-login-button" ' +
         'data-max-rows="1" ' + 
-        'data-size="{{buttonSize}}" ' +
-        'data-show-faces="{{showFaces}}" ' +
-        'data-auto-logout-link="{{autoLogout}}" ' +
+        'data-size="{{size||\'medium\'}}" ' +
+        'data-show-faces="{{!!showFaces}}" ' +
+        'data-auto-logout-link="{{!!autoLogout}}" ' +
         '></div>';
 
     return {
-        response: 'EA',
+        restrict: 'E',
         scope: {
-            'buttonSize': '=',
-            'autoLogout': '=',
-            'showFaces': '='
+            'autoLogout': '@',
+            'size': '@',
+            'showFaces': '@'
         },
         template: template
     }
 });
+
+simpleLifeApp.directive('facebookLike', function ($location) {
+    var template = '<div class="fb-like" ' + 
+        'data-href="{{href || currentPage}}" ' +
+        'data-colorscheme="{{colorScheme || \'light\'}}" ' +
+        'data-layout="{{layout || \'standard\'}}" ' +
+        'data-action="{{ action || \'like\'}}" ' +
+        'data-show-faces="{{!!showFaces}}" ' +
+        'data-share="{{!!share}}"' +
+        'data-action="{{action || \'like\'}}"' +
+        'data-send="false"></div>';
+
+    return {
+        restrict:'E',
+        scope: {
+            'colorScheme': '@',
+            'layout':      '@',
+            'showFaces':   '@',
+            'href':        '@',
+            'action':      '@',
+            'share':       '@',
+        },
+        template: template,
+        link: function(scope, element, attrs) {
+            scope.currentPage = $location.absUrl();
+        },
+    }
+});
+
 
 module.directive ('facebook', function ($location, facebook) {
     var template = 

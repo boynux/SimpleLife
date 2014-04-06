@@ -8,7 +8,7 @@ factory ('animation', function ($rootScope, $q, $log) {
             },
 
             animation: {
-                maxSpeed: 6,
+                maxSpeed: 10,
                 currentSpeed: 2
             },
 
