@@ -45,3 +45,22 @@ body {
     color: gray;
     top: 90%;
 }
+
+.albums {
+
+}
+
+.albums .thumbnail {
+    margin: 0px;
+}
+
+.albums .title {
+    display: block;
+
+    font-size: 145%;
+    font-weight: bolder;
+    background-color: rgba(0,0,0,.4);
+
+    position: relative;
+    bottom: calc(1.6em - 100%);
+}

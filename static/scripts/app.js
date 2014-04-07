@@ -76,4 +76,19 @@ simpleLifeApp.factory ('Album', function ($resource) {
     return $resource ('albums/:id', {albumId: '@id'});
 });
 
+simpleLifeApp.directive ('albumTile', function () {
+    var template = 
+    "<div class='thumbnail btn'> \
+        <div style='margin-top: 100%'></div> \
+        <div style='position: absolute; top: 0; left: 15px; bottom: 0; right: 15px' > \
+            <div ng-transclude></div> \
+        </div> \
+    </div>";
+
+    return {
+        restrict: 'EA',
+        template: template,
+        transclude: true
+    }
+});
 

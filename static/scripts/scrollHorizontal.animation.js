@@ -2,10 +2,11 @@ function scrollHorizontal (animationService) {
     console.debug ('scroll horizontal callaed!');
 
     var parameters = animationService.getParameters ();
+    var imagesInfo = animationService.getImagesInfo ();
     console.debug (parameters);
 
     var rows = 3;
-    var cols = Math.ceil (parameters.images.count / rows);
+    var cols = Math.ceil (imagesInfo.count / rows);
 
     var offsetX = - parameters.clientSize.width / 2;
     var offsetY = - parameters.clientSize.height / 2;
@@ -15,7 +16,7 @@ function scrollHorizontal (animationService) {
     var speed = [];
 
     var virtualWidth = Math.max (
-        parameters.images.averageWidth * cols / rows, 
+        imagesInfo.averageWidth * cols / rows, 
         parameters.clientSize.width
     );
 

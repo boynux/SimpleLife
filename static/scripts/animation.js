@@ -1,58 +1,32 @@
 var module = angular.module ('bnx.simple-life.animation', []).
-factory ('animation', function ($rootScope, $q, $log) {
-    function Animation (params) {
-        this.parameters = {
-            clientSize: {
-                width: document.body.clientHeight,
-                height: document.body.clientWidth
-            },
+factory ('animationImageManager', function ($rootScope, $q, $log) {
+    function ImageManager () {
+        this.imageStats = {
+            count: 0,
+            averageWidth: 0,
+            averageHeight: 0,
+        };
 
-            animation: {
-                maxSpeed: 10,
-                currentSpeed: 2
-            },
-
-            images: {
-                count: 0,
-                averageWidth: 0,
-                averageHeight: 0,
-            },
-        }
-
-        this.controls = [],
-        this.displayObject = [],
-        this.animationQ = []
+        /**
+         * TODO: Add grouping support to image manager.
+         */
         this.inventory = {
             images: {},
         };
 
-        $.extend (this.parameters, params);
-        $log.debug ("initializing new Animation object", this.parameters);
+        this.displayObject = [];
+    }
 
-        this.layer = new collie.Layer({
-            width: this.parameters.clientSize.width,
-            height: this.parameters.clientSize.height,
-        });
-
-        this.initialized = true;
-    };
-
-    Animation.prototype = {
-
+    ImageManager.prototype = {
         clear: function ()
         {
             $log.debug ('clear called, removing objects ...');
-            angular.forEach (this.getDisplayObjects (), function (item) {
-                item.detach ('click');
-                item.detach ('mouseup');
-                item.detach ('mousedown');
-            });
 
             collie.ImageManager.reset ();
 
-            this.parameters.images.count = 0;
+            this.imageStats.count = 0;
             this.inventory.images = {};
-            this.layer.clear ();
+            this.displayObject = [];
         },
 
         getImage:function  (id) {
@@ -62,13 +36,14 @@ factory ('animation', function ($rootScope, $q, $log) {
         updateImageInfo: function (id, image)
         {
             console.debug (id, image);
-            this.inventory.images[id] = image;
-            this.parameters.images.count ++;
 
-            this.parameters.images.averageHeight = 
-                (this.parameters.images.averageHeight + image.height) / 2;
-            this.parameters.images.averageWidth = 
-                (this.parameters.images.averageWidth + image.width) / 2;
+            this.inventory.images[id] = image;
+            this.imageStats.count ++;
+
+            this.imageStats.averageHeight = 
+                (this.imageStats.averageHeight + image.height) / 2;
+            this.imageStats.averageWidth = 
+                (this.imageStats.averageWidth + image.width) / 2;
         },
 
         addImage: function (item, updateInfo) {
@@ -84,7 +59,7 @@ factory ('animation', function ($rootScope, $q, $log) {
             var defer = $q.defer ();
 
             collie.ImageManager.add(items, function () {
-                defer.resolve (true);
+                defer.resolve (itemId, item);
             });
 
             return defer.promise;
@@ -93,7 +68,6 @@ factory ('animation', function ($rootScope, $q, $log) {
         addImages: function (images) {
             var items = {};
 
-            console.debug ('this is:', this);
             angular.forEach (images, function (item, id) {
                 var itemId = item.id || id;
 
@@ -107,13 +81,13 @@ factory ('animation', function ($rootScope, $q, $log) {
             var defer = $q.defer ();
 
             collie.ImageManager.add(items, function () {
-                defer.resolve (true);
+                defer.resolve (items);
             });
 
             return defer.promise;
         },
 
-        drawImage: function (id, config) {
+        createDisplayobject: function (id, config) {
             var properties = {
                 name: id,
                 originX: 'left',
@@ -127,7 +101,83 @@ factory ('animation', function ($rootScope, $q, $log) {
                 $.extend (properties, config);
             }
 
-            var image = new collie.FramedImage (properties).addTo (this.layer);
+            var image = new collie.FramedImage (properties);
+            this.displayObject.push (image);
+
+            return image;
+        },
+
+        getImages: function () {return this.inventory.images;},
+        getDisplayObject: function (id) {return this.displayObject [id]; },
+        getDisplayObjects: function () {return this.displayObject; },
+        getImagesInfo: function () {return this.imageStats;},
+    };
+
+    return new ImageManager ();
+}).
+
+factory ('animation', function ($rootScope, $q, $log, animationImageManager) {
+    var layer;
+    function Animation (params) {
+        this.parameters = {
+            clientSize: {
+                width: document.body.clientHeight,
+                height: document.body.clientWidth
+            },
+
+            animation: {
+                maxSpeed: 10,
+                currentSpeed: 2
+            },
+        }
+
+        this.controls = [],
+        this.animationQ = []
+
+        $.extend (this.parameters, params);
+        $log.debug ("initializing new Animation object", this.parameters);
+
+        layer = layer || new collie.Layer({
+            width: this.parameters.clientSize.width,
+            height: this.parameters.clientSize.height,
+        });
+
+        this.layer = layer;
+        this.initialized = true;
+    };
+
+    Animation.prototype = {
+
+        clear: function ()
+        {
+            $log.debug ('clear called, removing objects ...');
+            angular.forEach (animationImageManager.getDisplayObjects (), function (item) {
+                item.detach ('click');
+                item.detach ('mouseup');
+                item.detach ('mousedown');
+            });
+
+            layer.removeChildren (animationImageManager.getDisplayObjects ());
+            animationImageManager.clear ();
+            this.layer.clear ();
+        },
+
+        getImage:function  (id) {
+            return animationImageManager.getImage (id);
+        },
+
+        addImage: function (item, updateInfo) {
+            return animationImageManager.addImage (item, updateInfo);
+        },
+
+        addImages: function (images) {
+            return animationImageManager.addImages (images);
+        },
+
+        drawImage: function (id, config) {
+            var image = animationImageManager.createDisplayobject (id, config);
+
+            image.addTo (this.layer);
             image.attach ({
                 click: function (event) {
                     $rootScope.$broadcast ('bnx.sl.item.click', event);
@@ -142,15 +192,13 @@ factory ('animation', function ($rootScope, $q, $log) {
                 }
             });
 
-            this.displayObject.push (image);
-
             return image;
         },
 
-        getImages: function () {return this.inventory.images;},
-        getDisplayObject: function (id) {return this.displayObject [id]; },
-        getDisplayObjects: function () {return this.displayObject; },
-        getImagesInfo: function () {return this.parameters.images;},
+        getImages: function () {return animationImageManager.getImages ();},
+        getDisplayObject: function (id) {return animationImageManager.getDisplayObject (id); },
+        getDisplayObjects: function () {return animationImageManager.getDisplayObjects (); },
+        getImagesInfo: function () {return animationImageManager.getImagesInfo ();},
         getParameters: function () {return this.parameters;},
         setAnimationSpeed: function (speed) { this.parameters.animation.currentSpeed = speed; },
         getLayer: function () { return this.layer; },
