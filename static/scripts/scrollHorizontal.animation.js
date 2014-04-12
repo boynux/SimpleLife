@@ -37,7 +37,7 @@ function scrollHorizontal (animationService) {
         var x = offsetX + (Math.floor(i / rows) % cols) * width + padding * (Math.floor(i / rows) % cols);
         var y = offsetY + (i % rows) * height;
 
-        speed[i] = (Math.random () * 100 % 10 + 5) / 5;
+        speed[i] = (Math.random () * 100 % 10 + 4) / 3;
 
         var itemProperties = animationService.getImage (item.get ("name"));
 

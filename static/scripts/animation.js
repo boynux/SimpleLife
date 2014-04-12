@@ -2,19 +2,22 @@ var module = angular.module ('bnx.simple-life.animation', []).
 factory ('animationImageManager', function ($rootScope, $q, $log) {
     function ImageManager () {
         this.imageStats = {
-            count: 0,
-            averageWidth: 0,
-            averageHeight: 0,
+            default: {
+                count: 0,
+                averageWidth: 0,
+                averageHeight: 0,
+            }
         };
 
         /**
          * TODO: Add grouping support to image manager.
          */
         this.inventory = {
-            images: {},
+            images: {
+                default: {}
+            },
+            displayObjects: []
         };
-
-        this.displayObject = [];
     }
 
     ImageManager.prototype = {
@@ -24,29 +27,36 @@ factory ('animationImageManager', function ($rootScope, $q, $log) {
 
             collie.ImageManager.reset ();
 
-            this.imageStats.count = 0;
-            this.inventory.images = {};
-            this.displayObject = [];
+            this.imageStats = {
+                default: {
+                    count: 0,
+                    averageWidth: 0,
+                    averageHeight: 0,
+                }
+            }
+
+            this.inventory.images = { 'default': {} };
+            this.inventory.displayObjects = [];
         },
 
-        getImage:function  (id) {
-            return this.inventory.images[id];
+        getImage:function  (id, group) {
+            return this.inventory.images[group || 'default'][id];
         },
 
-        updateImageInfo: function (id, image)
+        updateImageInfo: function (id, image, group)
         {
-            console.debug (id, image);
+            group = group || 'default';
 
-            this.inventory.images[id] = image;
-            this.imageStats.count ++;
+            this.inventory.images[group][id] = image;
+            this.imageStats[group].count ++;
 
-            this.imageStats.averageHeight = 
-                (this.imageStats.averageHeight + image.height) / 2;
-            this.imageStats.averageWidth = 
-                (this.imageStats.averageWidth + image.width) / 2;
+            this.imageStats[group].averageHeight = 
+                (this.imageStats[group].averageHeight + image.height) / 2;
+            this.imageStats[group].averageWidth = 
+                (this.imageStats[group].averageWidth + image.width) / 2;
         },
 
-        addImage: function (item, updateInfo) {
+        addImage: function (item, group, updateInfo) {
             var itemId = item.id;
             var items = [];
 
@@ -54,7 +64,7 @@ factory ('animationImageManager', function ($rootScope, $q, $log) {
                 items[itemId] = item.source;      
             }
 
-            updateInfo && this.updateImageInfo (itemId, item);
+            updateInfo && this.updateImageInfo (itemId, item, group);
 
             var defer = $q.defer ();
 
@@ -65,7 +75,7 @@ factory ('animationImageManager', function ($rootScope, $q, $log) {
             return defer.promise;
         },
 
-        addImages: function (images) {
+        addImages: function (images, group) {
             var items = {};
 
             angular.forEach (images, function (item, id) {
@@ -75,10 +85,16 @@ factory ('animationImageManager', function ($rootScope, $q, $log) {
                     items[itemId] = item.source;      
                 }
 
-                this.updateImageInfo (itemId, item);
+                this.updateImageInfo (itemId, item, group);
             }.bind (this));
 
             var defer = $q.defer ();
+
+            collie.ImageManager.attach ('process', function (event) {
+                $rootScope.$apply (function () {
+                    $rootScope.$broadcast ('bnx.sl.image-manager.' + group + '.progress', event);
+                });
+            });
 
             collie.ImageManager.add(items, function () {
                 defer.resolve (items);
@@ -102,15 +118,15 @@ factory ('animationImageManager', function ($rootScope, $q, $log) {
             }
 
             var image = new collie.FramedImage (properties);
-            this.displayObject.push (image);
+            this.inventory.displayObjects.push (image);
 
             return image;
         },
 
-        getImages: function () {return this.inventory.images;},
-        getDisplayObject: function (id) {return this.displayObject [id]; },
-        getDisplayObjects: function () {return this.displayObject; },
-        getImagesInfo: function () {return this.imageStats;},
+        getImages: function (group) {return this.inventory.images[group || 'default'];},
+        getDisplayObject: function (id) {return this.inventory.displayObjects [id]; },
+        getDisplayObjects: function () {return this.inventory.displayObjects; },
+        getImagesInfo: function (group) {return this.imageStats[group || 'default'];},
     };
 
     return new ImageManager ();
@@ -162,43 +178,45 @@ factory ('animation', function ($rootScope, $q, $log, animationImageManager) {
             this.layer.clear ();
         },
 
-        getImage:function  (id) {
-            return animationImageManager.getImage (id);
+        getImage:function  (id, group) {
+            return animationImageManager.getImage (id, group);
         },
 
-        addImage: function (item, updateInfo) {
-            return animationImageManager.addImage (item, updateInfo);
+        addImage: function (item, group, updateInfo) {
+            return animationImageManager.addImage (item, group, updateInfo);
         },
 
-        addImages: function (images) {
-            return animationImageManager.addImages (images);
+        addImages: function (images, group) {
+            return animationImageManager.addImages (images, group);
         },
 
-        drawImage: function (id, config) {
+        drawImage: function (id, config, group) {
+            group = group || 'default';
+
             var image = animationImageManager.createDisplayobject (id, config);
 
             image.addTo (this.layer);
             image.attach ({
                 click: function (event) {
-                    $rootScope.$broadcast ('bnx.sl.item.click', event);
+                    $rootScope.$broadcast ('bnx.sl.item.' + group + '.click', event);
                 },
 
                 mousedown: function (event) {
-                    $rootScope.$broadcast ('bnx.sl.item.mousedown', event);
+                    $rootScope.$broadcast ('bnx.sl.item.' + group + '.mousedown', event);
                 },
 
                 mouseup: function (event) {
-                    $rootScope.$broadcast ('bnx.sl.item.mouseup', event);
+                    $rootScope.$broadcast ('bnx.sl.item.' + group + '.mouseup', event);
                 }
             });
 
             return image;
         },
 
-        getImages: function () {return animationImageManager.getImages ();},
+        getImages: function (group) {return animationImageManager.getImages (group);},
         getDisplayObject: function (id) {return animationImageManager.getDisplayObject (id); },
         getDisplayObjects: function () {return animationImageManager.getDisplayObjects (); },
-        getImagesInfo: function () {return animationImageManager.getImagesInfo ();},
+        getImagesInfo: function (group) {return animationImageManager.getImagesInfo (group);},
         getParameters: function () {return this.parameters;},
         setAnimationSpeed: function (speed) { this.parameters.animation.currentSpeed = speed; },
         getLayer: function () { return this.layer; },
@@ -276,6 +294,7 @@ module.directive('animationAlbumShow', function ($rootScope, animation, $log) {
     function link (scope, element, attrs, ngModel) {
         $log.debug ("Loading new animation ...");
 
+        scope.progress = 0;
         scope.animation = animation.new ({
             clientSize: {
                 width : element.offsetParent ().width (),
@@ -302,27 +321,32 @@ module.directive('animationAlbumShow', function ($rootScope, animation, $log) {
                 y: 0,
                 zIndex: -1,
                 fitImage: false,
-            });
+            }, 'background');
 
-            scope.animation.addImages (ngModel.$modelValue);
+            scope.animation.addImages (ngModel.$modelValue, 'default', {'process': function (event) {
+                scope.progress = Math.floor ((event.count / event.total) * 100)
+            }}).then (function () {
+                $log.debug ('all loaded');  
 
-            angular.forEach (scope.animation.getImages (), function (link, id) {
-                var item = scope.animation.drawImage (id, {
-                    x: parameters.clientSize.width / 2,
-                    y: parameters.clientSize.height / 2,
+                angular.forEach (scope.animation.getImages (), function (link, id) {
+                    var item = scope.animation.drawImage (id, {
+                        x: parameters.clientSize.width / 2,
+                        y: parameters.clientSize.height / 2,
 
-                    radius: 8,
-                    strokeWidth: 4,
-                    strokeColor: "#fff"
+                        radius: 8,
+                        strokeWidth: 4,
+                        strokeColor: "#fff"
+                    });
                 });
-            });
 
-            var layoutFunctions = [scrollHorizontal];
-            var layoutSelectedIndex = -1;
+                var layoutFunctions = [scrollHorizontal];
+                var layoutSelectedIndex = -1;
 
-            var control = scope.animation.repeat(function(oEvent){
-                layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
-                arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](scope.animation));
+                var control = scope.animation.repeat(function(oEvent){
+                    layoutSelectedIndex = (++layoutSelectedIndex) % layoutFunctions.length;
+                    arrangeItems.apply (arrangeItems, layoutFunctions[layoutSelectedIndex](scope.animation));
+                });
+
             });
 
             function arrangeItems(getTransitionInfo, updateRepeatInfo){

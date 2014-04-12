@@ -70,35 +70,6 @@ simpleLifeControllers.controller ('AlbumsListCtrl', ['$scope', '$http', '$locati
             console.log ('response: ', response);
             $scope.albumsList = response.data;
         });
-                
-        $scope.submit = function () {
-            var albums = [];
-
-            angular.forEach (this.albums, function (album) {
-                if (album.selected) {
-                    albums.push (album.id);
-                }
-            });
-
-            $http.post ('albums', {albums: albums}).success (
-                function (data, status, header, config) {
-                    console.log ('data posted successfully');
-
-                    $location.path ('/confirm');
-                }
-            ).error (function (reason) {
-                !!reason && console.log (reason);
-                $http.post ("/renew_token", {redirect_url: $location.absUrl ()})
-                .success (function (response) {
-                    console.log (response);
-                    RenewToken.script = $sce.trustAsHtml (response);
-                });
-            });
-        }
-            
-        $scope.wobble = function () {
-            console.log (this);
-        }
     }
 ]);
 
@@ -121,6 +92,10 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
     function ($scope, $location, $http, RenewToken, $sce, $routeParams, $log) {
         $scope.pause = false;
 
+        $scope.$on ('bnx.sl.image-manager.default.progress', function (event) {
+            $scope.progress = Math.floor ((event.count / event.total) * 100);
+        });
+
         $scope.$on ('bnx.sl.animation.pause', function (event) {
             $scope.pause = true;
         });
@@ -129,16 +104,11 @@ simpleLifeControllers.controller ('SigninCtrl', ['$rootScope', '$location', '$ht
             $scope.pause = false;
         });
 
-        $scope.$on ('bnx.sl.item.click', function (ngEvent, event) {
+        $scope.$on ('bnx.sl.item.default.click', function (ngEvent, event) {
             $log.debug ('click detected!');
             if (!$scope.pause) {
-                if (event.displayObject.get('name') == 'background') {
-                    return;
-                }
-
                 var parameters = $scope.animation.getParameters ();
 
-                $log.debug ('click, start showing image ...');
                 $scope.currentObject = event.displayObject;
                 $scope.animation.pause ();
 

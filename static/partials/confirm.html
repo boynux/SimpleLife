@@ -1,8 +1,23 @@
 <script type='text/javascript' language='javascript' src='static/scripts/scrollHorizontal.animation.js'></script>
 <div ng-show='user' class='container-fluid'>
     <div class='row'>
+        <div class='col-md-12'>
+            <facebook-like href="{{activeImage}}" layout="button_count"></facebook-like>
+        </div>
+    </div>
+    <div class='row'>
         <div class='container col-md-12' style='position: absolute; left:0px; right: 0px; display: block; float: none'>
             <div animation-album-show id='container' ng-model='album.pictures'>
+            </div>
+            <div ng-show="progress < 100" class="animate fade-out progress progress-striped active">
+                <div class="progress-bar" 
+                    role="progressbar" 
+                    aria-valuenow="{{progress}}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100" s
+                    tyle="width: {{progress}}%;">
+                    <span class="sr-only">{{progress}}% Complete</span>
+                </div>
             </div>
         </div>
     </div>
