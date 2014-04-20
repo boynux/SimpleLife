@@ -9,8 +9,11 @@ import facebook
 import datetime
 
 from google.appengine.ext import ndb
+from google.appengine.ext import blobstore
+from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras import sessions
 from google.appengine.api import taskqueue
+import lib.cloudstorage as gcs
 
 import json
 import os
@@ -19,6 +22,7 @@ from config import *
 from models.user import User
 from models.album import Album
 from models.image import Image
+from models.photo import Photo
 
 from handlers import FacebookHandler, fb_require_token
 
@@ -57,23 +61,9 @@ class AlbumsHandler (FacebookHandler):
                 result = Album.query (albumId, ancestor = user.key).fetch ()
             else:
                 result = [
-                    {"id": album.key.id(), "name": album.name, "cover":
-                        base64.b64encode (album.cover if album.cover else '')} 
+                    {"id": album.key.id(), "name": album.name, "cover": "/image/%s" % album.cover}
                     for album in user.albums
                 ]
-            """
-            all_albums = self.graph ('me/albums')
-            
-            if all_albums:
-                print albums
-                albums = [
-                    dict (
-                        name = album["name"],
-                        icon = self.graph (album["cover_photo"]),
-                        dikt = album
-                    ) for album in all_albums["data"]
-                ]
-            """
         else:
             pass
 
@@ -86,12 +76,6 @@ class AlbumsHandler (FacebookHandler):
             if self.current_user:
                 user = User.get_user_by_id (self.current_user['id'])
 
-            # for album in data["albums"]:
-                #info = self.graph (album["id"])
-
-                # album = user.add_album (info)
-
-            print data
             if data:
                 album = user.add_album (data)
                 taskqueue.add(url='/extractor', params = {'user': user.id,
@@ -153,16 +137,15 @@ class CreateCover (webapp2.RequestHandler):
                     if index > 4:
                         break
 
-                str = StringIO.StringIO ()
-                bg.save (str, 'PNG')
+                filename = "/covers/%s_cover" % album.key
+                with gcs.open (filename, 'w') as cover:
+                    bg.save (cover, 'PNG')
+                
+                blobkey = blobstore.create_gs_key ("/gs%s" % filename)
+                album.cover = blobstore.BlobKey (blobkey)
 
-                rawdata = str.getvalue ()
-                str.close ()
-
-                album.cover = rawdata
                 album.put ()
             except ValueError as e:
-                print e
                 raise e
 
 
@@ -186,15 +169,23 @@ class PictureExtractor (webapp2.RequestHandler):
             images_list = graph.get_object ("%s/photos" % fb_album["id"])
 
             if images_list:
-                images.extend ([
-                    Image (
-                        id=image["id"],
-                        source=image["images"][0]["source"], 
-                        width=image["images"][0]["width"],
-                        height=image["images"][0]["height"]
+                for image in images_list["data"]:
+                    imgdata = cStringIO.StringIO(urllib2.urlopen(image["images"][0]["source"]).read ())
+
+                    filename = "/photos/%s_photo" % image["id"]
+                    with gcs.open (filename, 'w') as photo:
+                        photo.write (imgdata.getvalue ())
+                
+                    blobkey = blobstore.create_gs_key ("/gs%s" % filename)
+                
+                    images.append (
+                        Photo (
+                            id=image["id"],
+                            payload = blobstore.BlobKey (blobkey),
+                            width=image["images"][0]["width"],
+                            height=image["images"][0]["height"]
+                        )
                     )
-                    for image in images_list["data"]
-                ])
 
         album.images = images
         album.put ()
@@ -268,10 +259,10 @@ class PicturesHandler (FacebookHandler):
 
 class JsonAlbumEncode (json.JSONEncoder):
     def default (self, obj):
-        if isinstance (obj, Image):
+        if isinstance (obj, Photo):
             return {
                 "id": obj.id,
-                "source": obj.source,
+                "source": "/image/%s" % obj.payload,
                 "width": obj.width,
                 "height": obj.height
             }
@@ -326,6 +317,10 @@ class TokenHandler (FacebookHandler):
 
         self.response.write (script)
 
+class ImageHandler (blobstore_handlers.BlobstoreDownloadHandler):
+    def get (self, resource):
+        resource = str(urllib2.unquote(resource))
+        self.send_blob(resource)
 
 class LogoutHandler(FacebookHandler):
     def get(self):
@@ -342,5 +337,6 @@ application = webapp2.WSGIApplication ([
     ('/renew_token', TokenHandler),
     ('/extractor', PictureExtractor),
     ('/create-cover', CreateCover),
+    ('/image/([^/]+)', ImageHandler),
 ], config = CONFIG, debug = True)
 

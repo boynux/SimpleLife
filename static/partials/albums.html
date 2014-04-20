@@ -11,7 +11,7 @@
         <div ng-repeat="album in albums" ng-click="$location.path (album.id + '/pictures')" class="col-md-3 col-sm-4 col-xs-6">
             <div class='row'>
                 <div album-tile class='col-md-11 col-sm-11 col-xs-9' >
-                    <div style="background: transparent url(data:image/png;base64,{{album.cover}}) no-repeat center center scroll; height: 100%;">
+                    <div style="background: transparent url({{album.cover}}) no-repeat center center scroll; height: 100%;">
                         <span class='title' >{{album.name}}</spann> 
                     </div>
                 </div>
